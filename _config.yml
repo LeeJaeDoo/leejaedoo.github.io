@@ -54,7 +54,7 @@ highlighter: rouge
 permalink: /:title/
 collections:
   authors:
-    output: true
+    output: false
 paginate_path: "/page/:num/"
 show_get_theme_btn: true
 use_logo: false
