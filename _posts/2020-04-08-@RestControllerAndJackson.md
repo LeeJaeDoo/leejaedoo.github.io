@@ -1,9 +1,9 @@
 ---
 date: 2020-04-08 20:43:40
 layout: post
-title: @RestController와 Jackson 라이브러리의 관계
-subtitle: @RestController와 Jackson 라이브러리의 관계
-description: @RestController 선언을 통해 jackson 라이브러리가 사용된다.
+title: RestController와 Jackson 라이브러리의 관계
+subtitle: RestController와 Jackson 라이브러리의 관계
+description: RestController 선언을 통해 jackson 라이브러리가 사용된다.
 image: https://leejaedoo.github.io/assets/img/springboot.jpg
 optimized_image: https://leejaedoo.github.io/assets/img/springboot.jpg
 category: spring
