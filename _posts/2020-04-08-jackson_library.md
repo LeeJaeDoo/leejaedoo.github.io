@@ -53,6 +53,7 @@ comments: true
 - Include.NON_DEFAULT
 - Include.CUSTOM
 - Include.USE_DEFAULTS
+
 #### @JsonProperty
 **조건에 따른 제외 처리**
 ```java
