@@ -19,7 +19,7 @@ comments: true
 - java 객체를 json으로 변환하거나 json을 java 객체로 변환해주는 라이브러리.
 - api 개발 시 요청을 받아 DTO를 거쳐 json 형태로 변환되어 응답값을 보낼 때 이 라이브러리가 사용됨.
 - `@RestController` 어노테이션을 사용한 경우 요청과 응답의 객체 변환, 및 직렬화/역직렬화처리가 필요할 때 자동으로 이 라이브러리가 적용된다.
->참고 : [@RestController와 Jackson 라이브러리의 관계](https://leejaedoo.github.io/@RestControllerAndJackson.md/)
+>참고 : [@RestController와 Jackson 라이브러리의 관계](https://leejaedoo.github.io/@RestControllerAndJackson/)
 - object -> json 변환 시에는 자동으로 맡겨도 문제 없으나, 세부적인 컨트롤이 필요할 때가 있고, 그럴 때 필요한 어노테이션이 있음. 
 - 더욱 세부적인 설정이 필요할 경우 **ObjectMapper 객체**를 활용하여 설정할 수 있음.
 
