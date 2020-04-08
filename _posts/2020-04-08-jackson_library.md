@@ -81,6 +81,3 @@ String jsonStr = jsonMapper.writeValueAsString(dtoObject);
 - [https://cchoimin.tistory.com/entry/JAVA-JSON-다루기-정리-JACKSON-ObjectMapper](https://cchoimin.tistory.com/entry/JAVA-JSON-다루기-정리-JACKSON-ObjectMapper)
 - [https://yonguri.tistory.com/71](https://yonguri.tistory.com/71)
 - [https://alwayspr.tistory.com/31](https://alwayspr.tistory.com/31)
-- [https://github.com/TheOpenCloudEngine/uEngine-cloud-k8s/wiki/Redis-Java-Sample](https://github.com/TheOpenCloudEngine/uEngine-cloud-k8s/wiki/Redis-Java-Sample)
-- [http://jeong-pro.tistory.com/170](http://jeong-pro.tistory.com/170)
-- [http://dveamer.github.io/backend/SpringCacheable.html](http://dveamer.github.io/backend/SpringCacheable.html)
