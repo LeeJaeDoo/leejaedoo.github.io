@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: categories
 title: About
 description: Some description.
 permalink: /about/
