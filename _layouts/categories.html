@@ -2,8 +2,18 @@
 layout: default
 permalink: /categories/
 ---
-<ul>
-    {% for category in site.categories %}
-    <li><a href="{{ site.baseurl }}/{{ category | first }}">{{ category | first }} ({{ category | last | size }})</a></li>
+<ul class="posts-list">
+
+    {% assign category = page.category | default: page.title %}
+    {% for post in site.categories[category] %}
+    <li>
+        <h3>
+            <a href="{{ site.baseurl }}{{ post.url }}">
+                {{ post.title }}
+            </a>
+            <small>{{ post.date | date_to_string }}</small>
+        </h3>
+    </li>
     {% endfor %}
+
 </ul>
