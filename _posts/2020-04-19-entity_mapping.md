@@ -411,7 +411,7 @@ enum 이름을 데이터베이스 저장한다.(ex. ADMIN은 ADMIN, USER는 USER
 * CLOB : String, char[], java.sql.CLOB
 * BLOB : byte[], java.sql.BLOB
 
-### @Trasient
+### @Transient
 매핑하고 싶지 않는 필드에 선언한다. 객체에 임시로 어떤 값을 저장하고 싶을 때 사용한다.
 
 ### @Access
