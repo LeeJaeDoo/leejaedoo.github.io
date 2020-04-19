@@ -385,6 +385,7 @@ GenerationType.AUTO는 선택된 데이터베이스 방언데 따라 IDENTITY, S
 enum 순서를 데이터베이스에 저장한다.(ex. ADMIN은 0, USER는 1)
 * 장점 : 데이터베이스에 저장되는 데이터 크기가 작다.
 * 단점 : 이미 저장된 enum의 순서를 변경할 수 없다.
+
 ##### EnumType.STRING
 enum 이름을 데이터베이스 저장한다.(ex. ADMIN은 ADMIN, USER는 USER)
 * 장점 : 저장된 enum의 순서가 바뀌거나 enum이 추가되어도 안전하다.
