@@ -130,6 +130,7 @@ public class Member {
 > spring boot 2.0 부터는 use-new-id-generator-mappings: true가 default로, 기본 키 생성 전략이 AUTO인 경우 TABLE을 따라간다.
 
 > 참고 : [https://junhyunny.blogspot.com/2019/12/hibernate.html](https://junhyunny.blogspot.com/2019/12/hibernate.html)
+
 #### 직접 할당
 기본 키를 애플리케이션에서 직접 할당한다. (ex. 해당 필드에 @Id 선언) 아래와 같은 자바 타입에서만 @Id 선언이 가능하다.
 * 자바 기본타입
