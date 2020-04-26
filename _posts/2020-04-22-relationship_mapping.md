@@ -175,6 +175,7 @@ Team team = member.getTeam();   //  객체 그래프 탐색
 System.out.println(team.getTeam());
 ```
 * 객체지향 쿼리 사용(JPQL)
+
 ```java
 String jpql = "select m from Member m join m.team t where " + "t.name=:teamName";
 
@@ -186,7 +187,6 @@ for (Member member : resultList) {
     System.out.println(member.getUsername());
 }
 ```
-
 
 ### 수정
 ```java
