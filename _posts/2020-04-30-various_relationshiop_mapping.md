@@ -466,7 +466,7 @@ public class MemberProductMapping {
 >   * @IdClass외에 @EmbeddedId를 사용하는 방법도 있다.
 
 * 식별 관계
-MemberProductMapping은 회원과 상품의 기본 키를 받아서 자신의 기본 키로 사용한다.(복합 키) 이렇게 부모 테이블의 기본 키를 받아서 기본 키 + 외래 키로 사용하는 것을 `식별 관계(Identifying Relationship`라 한다.<br>
+MemberProductMapping은 회원과 상품의 기본 키를 받아서 자신의 기본 키로 사용한다.(복합 키) 이렇게 부모 테이블의 기본 키를 받아서 기본 키 + 외래 키로 사용하는 것을 `식별 관계(Identifying Relationship)`라 한다.<br>
 종합해보면, 회원상품은 회원의 기본 키를 자신의 기본 키로 사용함과 동시에 회원과의 관계를 위한 외래 키로도 사용한다.(상품도 마찬가지) 또한, MemberProductId 식별자 클래스로 두 기본 키를 묶어서 `복합 기본 키`로 사용한다.
 
 ```java
