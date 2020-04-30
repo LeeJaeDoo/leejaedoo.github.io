@@ -1,9 +1,9 @@
 ---
-date: 2020-04-19 15:27:40
+date: 2020-04-30 16:27:40
 layout: post
 title: 자바 ORM 표준 JPA 프로그래밍
-subtitle: 5. 다양한 연관관계 매핑
-description: 5. 다양한 연관관계 매핑
+subtitle: 6. 다양한 연관관계 매핑
+description: 6. 다양한 연관관계 매핑
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
 category: jpa
