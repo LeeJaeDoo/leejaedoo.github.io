@@ -314,6 +314,13 @@ TABLE 전략은 시퀀스 대신 테이블을 사용한다는 점만 제외하�
 </table>
 TABLE 전략은 값을 조회하면서 SELECT 쿼리를 사용하고 다음 값으로 증가시키기 위해 UPDATE 쿼리를 사용한다. 이 전략은 SEQUENCE 전략과 마찬가지로 데이터베이스에 한 번 더 통신하게 되는 단점이 있다. 최적화하려면 마찬가지로 @TableGenerator.allocationSize를 사용한다.
 
+> * SEQUENCE/TABLE 전략의 allocationSize 기본 값이 50인 이유는?<br>
+>   * SEQUENCE 전략의 최적화를 위해<br>
+>   시퀀스에 접근하는 횟수를 줄이기 위해 allocationSize를 사용한다. 예를 들어 allocationSize 값이 50이면 시퀀스를 한번에 50 증가 시킨 후 1 ~ 50 까지는 메모리에서 식별자를 할당한다. 그리고 51이 되면 시퀀스 값을 100으로 증가시킨 후 51 ~ 100 까지 메모리에서 식별자를 할당한다.<br>
+>   이 방법은 시퀀스 값을 선점하므로 jvm이 동시에 동작하더라도 기본 키 값이 충돌하지 않는 장점이 있다. 다만 시퀀스 값이 한 번에 많이 증가한다.
+>   * TABLE 전략의 최적화를 위해<br>
+>   값을 조회하게 되면 SELECT 쿼리 사용 후 다음 값을 증가시키기 위해 UPDATE 쿼리가 사용된다. 이는 SEQUENCE 전략과 비교해서 데이터베이스와 한 번 더 통신한다는 단점이 있다. 따라서 마찬가지로 allocationSize 기본 값을 50으로 줘서 이를 최소화하게 된다. 
+
 ##### AUTO
 GenerationType.AUTO는 선택된 데이터베이스 방언데 따라 IDENTITY, SEQUENCE, TABLE 전략 중 하나를 자동으로 선택한다. (ex. Oracle - SEQUENCE, MySQL - IDENTITY)
 > AUTO를 적용하게 되면 데이터베이스를 변경해도 코드 수정이 필요 없다.
