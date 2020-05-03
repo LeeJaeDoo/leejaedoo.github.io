@@ -385,7 +385,17 @@ GenerationType.AUTO는 선택된 데이터베이스 방언데 따라 IDENTITY, S
   </tbody>
 </table>
 
-> JPA에서는 `@Column을 생략했을 경우`DDL 생성 기능을 사용할 때 `int data;` 와 같은 `기본 타입에는 not null 제약 조건을 추가해 준다.` 반면 `Integer data;`같은 `객체 타입이면 null이 입력될 수 있으므로 not null 제약 조건을 설정해주지 않는다.` 이 때 int data; 에 @Column을 선언하게 되면 nullable = true가 기본 값이므로 `nullable = false`를 선언하는 것이 안전하다.
+#### nullable
+```java
+int data;       //  not null로 설정됨.
+
+Integer data;   //  nullable = true로 설정됨.
+
+@Column
+int data        // nullalbe = true로 설정되기 때문에 nullable = false 설정이 필요함.
+```
+
+> int data; 에 @Column을 선언하게 되면 nullable = true가 기본 값이므로 `nullable = false`를 선언하는 것이 안전하다.
 
 ### @Enumerated
 자바의 enum 타입을 매핑할 때 사용한다.
