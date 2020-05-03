@@ -214,7 +214,7 @@ UPDATE MEMBER SET TEAM_ID=null, ... WHERE ID='member1';
 ```java
 member1.setTeam(null):  //  회원1 연관관계 제거
 member2.setTeam(null);  //  회원2 연관관계 제거
-em.remove(team):        //  팀 삭
+em.remove(team):        //  팀 삭제
 ```
 ## 양방향 연관관계
 기존 단반향 연관관계는 회원에서 팀으로만 접근하는 매핑이었다면 양방향 연관관계는 물론 회원에서 팀으로 접근이 가능할 뿐만 아니라 반대 방향인 팀에서도 회원으로 접근이 가능한 매핑이다.
