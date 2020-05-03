@@ -74,8 +74,6 @@ JPA에서 사용할 엔티티 이름을 지정한다. 기본값은 클래스 이
   </tbody>
 </table>
 
-> @CreatedDate vs @Temporal ?
-
 ## DDL 생성 기능
 ```java
 @Entity
@@ -414,6 +412,8 @@ enum 이름을 데이터베이스 저장한다.(ex. ADMIN은 ADMIN, USER는 USER
 날짜 타입(java.util.Date, java.util.Calendar)을 매핑할 때 사용한다. 해당 어노테이션을 생략하게 되면 자바의 Date와 유사한 timestamp or datetime으로 정의된다.
 * datetime: MySQL
 * timestamp: H2, Oracle, PostgreSQL
+
+> @CreatedDate vs @Temporal ?
 
 #### 속성
 기본 값 없이 필수로 지정해야 한다.
