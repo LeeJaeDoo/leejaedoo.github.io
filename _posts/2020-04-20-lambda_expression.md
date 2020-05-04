@@ -382,7 +382,7 @@ ClassName::new처럼 클래스명과 new 키워드를 이용해서 기존 생성
 ```java
 Function<Integer, Apple> c2 = Apple::new;
 ->
-Function<Integer, Apple> c2 = (weight) -> new Apple();
+Function<Integer, Apple> c2 = (weight) -> new Apple(weight);
 ```
 
 ## 람다 표현식을 조합할 수 있는 유용한 메서드
