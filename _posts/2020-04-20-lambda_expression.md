@@ -82,7 +82,7 @@ public Callable<String> fetch() {
     return () -> "Tricky example ;-)";
 }
 ```
-Callable<String>의 시그니처는 `() -> String`이 되는데 return 형식도 이와 일치한다.
+Callable<String>의 시그니처는 `() -> String` 이 되는데 return 형식도 이와 일치한다.
 ```java
 Predicate<Apple> p = (Apple a) -> a.getWeight();
 ```
@@ -132,6 +132,7 @@ public static String processFile( BufferedReaderProcessor p ) throws IOException
 `java.util.function.Predicate<T>` 인터페이스는 test라는 추상 메서드를 정의하며, test는 제네릭 형식 T의 객체를 인수로 받아 boolean을 반환한다.
 별도의 정의 없이 바로 사용할 수 있다. T 형식의 객체를 사용하는 boolean 표현식이 필요한 상황에서 Predicate 인터페이스를 사용할 수 있다.
 * ex.
+
 ```java
 @FunctionalInterface
 public interface Perdicate<T> {
