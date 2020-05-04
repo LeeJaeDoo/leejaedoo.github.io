@@ -41,18 +41,18 @@ Comparator<Apple> byWeight = (Apple a1, Apple a2) -> a1.getWeight().compareTo(a2
 
 ### 람다의 문법
 람다 표현식에는 return이 함축되어 있기 때문에 return문을 명시하지 않아도 된다.
-* () -> {}
+* () -> {}<br>
 파라미터가 없으며 `void`를 반환하는 람다 표현식이다. 이는 `public void run() {}`와 같이 바디가 없는 메서드와 같다.
-* () -> "Hello"
+* () -> "Hello"<br>
 파마리터가 없으며 문자열을 반환하는 표현식이다. "Hello"는 구문이 아닌 표현식이기 때문에 세미콜론을 붙여선 안된다.
-* () -> { return "Mario"; }
+* () -> { return "Mario"; }<br>
 파라미터가 없으며 (**명시적으로** return 문을 이용해서) 문자열을 반환하는 표현식이다.
 ```java
 void lambdaTest() {
     return "Mario";
 }
 ```
-* (String s) -> { return "Alan" + s; } = (String s) -> "Alan" + s
+* (String s) -> { return "Alan" + s; } = (String s) -> "Alan" + s<br>
 return은 흐름 제어문이기 때문에 {}로 감싸줘야 한다. return이 없다면 흐름 제어문이 아니므로 {}과 세미콜론을 빼야한다.
 
 ## 람다가 사용되는 경우
