@@ -82,7 +82,7 @@ public Callable<String> fetch() {
     return () -> "Tricky example ;-)";
 }
 ```
-Callable<String>의 시그니처는 `() -> String`이 되는데 return 형식도 이와 일치하다.
+Callable<String>의 시그니처는 `() -> String`이 되는데 return 형식도 이와 일치한다.
 ```java
 Predicate<Apple> p = (Apple a) -> a.getWeight();
 ```
