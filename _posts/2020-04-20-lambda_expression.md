@@ -86,7 +86,7 @@ Callable<String>의 시그니처는 `() -> String`이 되는데 return 형식도
 ```java
 Predicate<Apple> p = (Apple a) -> a.getWeight();
 ```
-Predicate<Apple> p의 시그니처는 `Predicate<Apple>: (Apple) -> boolean`이지만 (Apple a) -> a.getWeight()의 시그니처는 `(Apple a) -> Integer`로 다르므로 올바르지 유효한 람다 표현식이 아니다.
+Predicate<Apple> p의 시그니처는 `Predicate<Apple>: (Apple) -> boolean`이지만 (Apple a) -> a.getWeight()의 시그니처는 `(Apple a) -> Integer`로 다르므로 유효한 람다 표현식이 아니다.
 
 > @FunctionalInterface 란 함수형 인터페이스에 선언하는 어노테이션으로 만약 선언된 인터페이스에 추상 메서드의 개수가 한 개이상이라면 `Multiplenonoverriding abstract methods found in interface Foo` 오류가 나게 된다. 
 
