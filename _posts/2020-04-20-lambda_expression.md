@@ -207,7 +207,7 @@ List<Integer> l = map(
     <tr>
       <td>Predicate< T ></td>
       <td>T -> boolean</td>
-      <td>IntPredicate, LongPredicate, DoulePredicate</td>
+      <td>IntPredicate, LongPredicate, DoublePredicate</td>
       <td></td>
     </tr>
     <tr>
