@@ -110,6 +110,8 @@ Member.team과 MEMBER.TEAM_ID를 매핑하는 것이 연관관계 매핑이다. 
   </tbody>
 </table>
 
+> @JoinColumn 은 생략하게 되면 기본 전략`(필드명 + ㅡ + 참조하는 테이블의 기본 키 컬럼명)`으로 적용된다.
+
 ### @ManyToOne
 다대일 관계에서 사용한다.
 <table>
