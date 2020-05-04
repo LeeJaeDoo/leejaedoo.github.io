@@ -62,6 +62,9 @@ return은 흐름 제어문이기 때문에 {}로 감싸줘야 한다. return이 
 
 람다 표현식으로 함수형 인터페이스의 추상 메서드 구현을 직접 전달할 수 있으므로, `전체 표현식을 함수형 인터페이스의 인스턴스로 취급`할 수 있다.
 
+> Comparator는 `compare()`와 `equals()` 두 메서드가 존재하는데 함수형 인터페이스인 이유는 ?<br>
+>-> 참고 :  [https://stackoverflow.com/questions/43616649/how-can-comparator-be-a-functional-interface-when-it-has-two-abstract-methods/43616695](https://stackoverflow.com/questions/43616649/how-can-comparator-be-a-functional-interface-when-it-has-two-abstract-methods/43616695)
+
 ### 함수 디스크립터
 함수형 인터페이스의 추상 메서드 시그니처는 람다 표현식의 시그니처를 가리킨다. 람다 표현식의 시그니처를 서술하는 메서드를 `함수 디스크립터`라고 한다.
 > 함수형 인터페이스를 인수로 받는 메서드에만 람다 표현식을 사용할 수 있다.
