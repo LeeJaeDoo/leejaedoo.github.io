@@ -88,7 +88,7 @@ Predicate<Apple> p = (Apple a) -> a.getWeight();
 ```
 Predicate<Apple> p의 시그니처는 `Predicate<Apple>: (Apple) -> boolean`이지만 (Apple a) -> a.getWeight()의 시그니처는 `(Apple a) -> Integer`로 다르므로 유효한 람다 표현식이 아니다.
 
-> @FunctionalInterface 란 함수형 인터페이스에 선언하는 어노테이션으로 만약 선언된 인터페이스에 추상 메서드의 개수가 한 개이상이라면 `Multiplenonoverriding abstract methods found in interface Foo` 오류가 나게 된다. 
+> @FunctionalInterface 란 함수형 인터페이스에 선언하는 어노테이션으로 만약 선언된 인터페이스에 추상 메서드의 개수가 두 개 이상이라면 `Multiplenonoverriding abstract methods found in interface Foo` 오류가 나게 된다. 
 
 ## 람다의 활용: 실행 어라운드 패턴(Execute Around Pattern)
 실행 어라운드 패턴이란 실제 데이터를 처리하는 코드를 설정과 정리 두 과정이 둘러싸는 형태를 갖는다.
