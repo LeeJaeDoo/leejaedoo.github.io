@@ -193,3 +193,158 @@ public class Book extends Item {...}
 * 자식 테이블을 통합해서 쿼리하기 어렵다.
 
 ## @MappedSuperclass
+`@MappedSuperclass`는 부모 클래스와 자식 클래스 모두 데이터베이스 테이블과 매핑하는 것이 아닌 `부모 클래스는 테이블과 매핑하지 않고 부모 클래스를 상속 받는 자식 클래스에게 매핑 정보만 제공할 때` 사용 된다.<br>
+추상 클래스와 비슷한 개념으로, @Entity와 달리 실제 테이블과 매핑되지 않는다. 단순히 매핑 정보를 상속할 목적으로만 사용된다.
+![mappedsuperclass](../assets/img/mappedsuperclass.jpg)
+id, name 두 공통 속성을 부모 클래스로 모으고 객체 상속 관계로 만든다.
+```java
+@MappedSuperclass
+public abstract class BaseEntity {
+
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+    ...
+}
+
+@Entity
+public class Member extends BaseEntity {
+
+    // ID 상속
+    // NAME 상속
+    private String email;
+    ...
+}
+
+@Entity
+public class Seller extends BaseEntity {
+
+    // ID 상속
+    // NAME 상속
+    private String shopName;
+    ...
+}
+```
+* @AttributeOverrides/@AttributeOverride
+부모로 부터 물려받은 매핑 정보를 재정의 한다.
+```java
+@Entity
+@AttributeOverride(name = "id", column = @Column(name = "MEMBER_ID"))
+public class Member extends BaseEntity { ... }
+```
+상속 받은 id 속성의 컬럼명을 MEMBER_ID로 재정의했다. 둘 이상을 재정의 할 때는 @AttributeOverrides를 사용한다.
+```java
+@Entity
+@AttributeOverrides({
+    @AttributeOverride(name = "id", column = @Column(name = "MEMBER_ID"))
+    @AttributeOverride(name = "name", column = @Column(name = "MEMBER_NAME"))
+})
+public class Member extends BaseEntity { ... }
+```
+### 특징
+* 테이블과 매핑되지 않고 자식 클래스에 엔티티의 매핑 정보를 상속하기 위해 사용한다.
+* @MappedSuperclass로 지정한 클래스는 엔티티가 아니므로 em.find()나 JPQL에서 사용할 수 없다.
+* 이 클래스를 직접 생성해서 사용할 일은 거의 없으므로 추상 킅래스로 만드는 것을 권장한다.
+> 엔티티(@Entity)는 엔티티(@Entity)이거나 @MappedSuperclass로 지정한 클래스만 상속받을 수 있다.
+
+## 복합 키와 식별 관계 매핑
+### 식별 관계 vs 비식별 관계
+데이터베이스 테이블 사이에 관계는 외래 키가 기본 키에 포함되는지 여부에 따라 식별 관계와 비식별 관계로 구분한다.
+#### 식별 관계
+부모 테이블의 기본 키를 내려받아서 `자식 테이블의 기본 키 + 외래 키`로 사용하는 관계다.
+![식별관계](../assets/img/identifying_relationship.jpg)
+
+#### 비식별 관계
+부모 테이블의 기본 키를 받아서 `자식 테이블의 외래 키`로만 사용하는 관계다.
+![비식별관계](../assets/img/non_identifying_relationship.jpg)
+비식별 관계는 외래 키에 NULL을 허용하는지에 따라 필수적/선택적 비식별 관계로 나뉜다.
+* 필수적 비식별 관계(Mandatory)<br>
+외래 키에 NULL을 허용하지 않는다. 연관관계를 필수적으로 맺어야 한다.
+* 선택적 비식별 관계(Optional)<br>
+외래 키에 NULL을 허용한다. 연관관계를 맺을지 말지 선택할 수 있다.
+
+### 복합 키를 활용한 비식별 관계 매핑
+JPA에서 식별자를 둘 이상 사용하려면 별도의 식별자 클래스를 만들어야 한다.<br>
+JPA는 영속성 컨텍스트에 엔티티를 보관할 때 엔티티의 식별자를 키로 사용한다. 그리고 식별자를 구분하기 위해 equals와 hashCode를 사용하여 동등성 비교를 한다. 그런데 식별자 필드가 하나일 때는 보통 자바의 기본 타입을 사용하므로 문제가 없지만, 식별자 필드가 2개 이상이면 별도의 식별자 클래스를 만ㄷ르고 그 곳에 equals와 hashCode를 구현해야 한다.<br>
+JPA는 복합 키를 지원하기 위해 `@IdClass`와 `@EmbeddedId` 2가지 방법을 제공한다.
+#### @IdClass
+관계형 데이터베이스에 더 가까운 방법으로 아래와 같이 사용된다.
+![복합키테이블](../assets/img/복합키.JPG)
+```java
+@Entity
+@IdClass(ParentId.class)
+public class Parent {
+    @Id
+    @Column(name = "PARENT_ID1")
+    private String id1; //  ParentId.id1과 연결
+    @Id
+    @Column(name = "PARENT_ID2")
+    private String id2; //  ParentId.id2과 연결
+
+    private String name;
+    ...
+}
+```
+```java
+public class ParentId implements Serializable {
+
+    private String id1; //  Parent.id1 매핑
+    private String id2; //  Parent.id2 매핑
+
+    public ParentId() {}
+    
+    public ParentId(String id1, String id2) {
+        this.id1 = id1;
+        this.id2 = id2;
+    }
+
+    @Override
+    public boolean equals(Object o) {...}
+
+    @Override
+    public int hashCode() {...}
+}
+```
+@IdClass를 사용하기 위한 식별자 클래스는 다음 조건을 만족해야 한다.
+* 식별자 클래스의 속성명과 엔티티에서 사용하는 식별자의 속성명이 같아야 한다.(ex. Parent.id1과 ParentId.id1)
+* Serializable 인터페이스를 구현해야 한다.
+* equals, hashCode를 구현해야 한다.
+* 식별자 클래스는 public 이어야 한다.
+
+```java
+Parent parent = new Parent();
+parent.setId1("myId1"); //  식별자
+parent.setId2("myId2"); //  식별자
+parent.setName("parentName");
+em.persist(parent);
+```
+복합 키를 사용한 엔티티를 저장하는 코드로, ParentId 식별자 클래스가 보이지 않는데 이는 em.persist()를 호출하면 영속성 컨텍스트에 엔티티를 등록하기 직전에 내부에서 Parent.id1, Parent.id2 값을 사용해서 식별자 클래스인 ParentId를 생성하고 영속성 컨텍스트의 키로 사용한다.
+
+```java
+ParentId parentId = new ParentId("myId1", "myId2");
+Parent parent = em.find(Parent.class, parentId);
+```
+복합 키로 parent 엔티티를 조회해오는 코드다.
+
+```java
+@Entity
+public class Child {
+    
+    @Id
+    private String id;
+
+    @ManyToOne
+    @JoinColumns({
+        @JoinColumn(name = "PARENT_ID1",
+            referencedColumnName = "PARENT_ID1"),
+        @JoinColumn(name = "PARENT_ID2",
+            referencedColumnName = "PARENT_ID2"),
+    })
+    private Parent parent;
+}
+```
+부모 테이블의 기본 키 컬럼이 복합 키이므로 자식 테이블의 외래 키도 복합 키다. 따라서 외래 키 매핑 시, 여러 컬럼을 매핑해야 하므로 @JoinColumns 어노테이션을 사용하고 각각의 외래 키 컬럼을 @JoinColumn으로 매핑한다.
+> 예제와 같이 @JoinColumn의 name 속성과 referencedColumnName 속성의 값이 같으면 referencedColumnName은 생략해도 된다.
+
+## 참조
+https://cyr9210.github.io/2019/11/18/JPA/ORM-JPA07/ 
