@@ -326,3 +326,72 @@ reduce를 활용하면 내부 반복이 추상화되면서 내부 구현에서 �
     </tr>
   </tbody>
 </table>
+
+## 숫자형 스트림
+```java
+int calories = menu.stream()
+                   .map(Dish::getCalories)
+                   .reduce(0, Integer::sum);  
+```
+위 메서드는 reduce를 활용하여 칼로리 합계를 계산할 수 있지만, 내부적으로 합계를 계산하기 전에 Integer를 기본형으로 언박싱해야 하는 비용이 발생한다.
+
+```java
+int calories = menu.stream()
+                   .map(Dish::getCalories)
+                   .sum();  
+```
+따라서 위 처럼 sum 메서드를 호출하면 좋겠지만, map 메서드는 Stream< T >를 생성하기 때문에 직접 sum 메서드를 호출할 수 없다. 스트림 인터페이스에는 sum 메서드가 없기 때문이다.<br>
+이를 해결하기 위해 다행히도 스트림 API는 숫자 스트림을 효율적으로 처리할 수 있도록 `기본형 특화 스트림(primitive stream specialization)`을 제공한다.
+
+### 기본형 특화 스트림
+스트림 API에서는 박싱 비용을 피할 수 있도록 `int 요소에 특화된 IntStream`, `double 요소에 특화된 DoubleStream`, `long 요소에 특화된 LongStream`을 제공한다.<br>
+각각의 인터페이스는 숫자 관련 연산 수행 메서드(sum, max ...)와 특화 스트림, 숫자 관련 메서드에서 다시 객체 스트림으로 복원하는 기능 등을 제공한다.
+
+#### 숫자 스트림으로 매핑 - mapToInt, mapToDouble, mapToLong
+map과 정확히 같은 기능을 수행하지만, Stream< T > 대신 특화된 스트림을 반환한다.
+```java
+int calories = menu.stream()                    //  Stream<Dish> 반환
+                   .mapToInt(Dish::getCalories) //  IntStream 반
+                   .sum();  
+```
+mapToInt 메서드는 각 요리에서 모든 칼로리(Integer 형식)를 추출한 다음 IntStream을(Stream< Integer >가 아님) 반환한다. 스트림이 비어있다면 sum은 기본 값 0을 반환한다.
+> IntStream 은 max, min, average 등 다양한 유틸리티 메서드를 지원한다.
+
+#### 객체 스트림으로 복원 - boxed
+IntStream의 map 연산은 int를 인수로 받아서 int를 반환하는 람다(IntUnaryOperator)를 인수로 받는다. 하지만 정수가 아닌 Dish 같은 다른 값을 반환하고 싶을 때 boxed 메서드를 이용하여 `특화 스트림을 일반 스트림으로 변환`할 수 있다.
+```java
+IntStream intStream = menu.stream()
+                          .mapToInt(Dish::getCalories); //  스트림을 숫자 스트림으로 변환
+Stream<Integer> stream = intStream.boxed();             //  숫자 스트림을 스트림으로 변환  
+```
+
+#### 기본 값: OptionalInt
+특화 스트림 중 기본 값이 0이 나오면 안되는 경우, 스트림에 요소가 없는 상황과 실제 최대값이 0인 상황을 구별해야 할 때, Optional을 Integer, String 등의 레퍼런스 형식으로 파라미터화 할 수 있다. 또한 OptionalInt, OptionalDouble, OptionalLong 세 가지 기본형 특화 스트림 버전도 제공한다.
+```java
+OptionalInt maxCalories = menu.stream()
+                              .mapToInt(Dish::getCalories)
+                              .max();
+int max = maxCalories.orElse(1);    //  값이 없을 때 기본 최댓값을 명시적으로 설정    
+```
+
+#### 숫자 범위 - range, rangeClosed
+첫 번째 인수로 시작값, 두 번째 인수로 종료값을 갖는다. range 메서드는 시작값과 종료값이 결과에 포함되지 않는 반면 rangeClosed는 시작값과 종료값이 결과에 포함된다.
+```java
+IntStream evenNumbers = IntStream.rangeClosed(1, 100)
+                                 .filter(n -> n % 2 == 0);  //  1부터 100까지의 짝수 스트림
+```
+
+## 스트림 만들기
+일련의 값, 배열, 파일, 함수를 이용해서도 스트림 만들기가 가능하다.
+
+### 값으로 스트림 만들기 - Stream.of()
+임의의 수를 인수로 받는 정적 메서드 Stream.of()를 이용하여 스트림을 만들 수 있다.<br>
+스트림의 모든 문자열을 대문자로 변환한 후 문자열을 하나씩 출력한다.
+```java
+Stream<String> stream = Stream.of("Java 8 ", "Lambdas ", "In ", "Action");
+stream.map(String::toUpperCase).forEach(System.out::println);
+```
+다음처럼 empty 메서드를 이용해 스트림을 비울 수 있다.
+```java
+Stream<String> emptyStream = Stream.empty();
+```
