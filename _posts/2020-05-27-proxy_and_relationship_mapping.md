@@ -1,5 +1,5 @@
 ---
-date: 2020-05-27 23:27:40
+date: 2020-05-30 13:27:40
 layout: post
 title: 자바 ORM 표준 JPA 프로그래밍
 subtitle: 8. 프록시와 연관관계 관리
@@ -283,3 +283,195 @@ WHERE TEAM_ID = 'team1'
 연관된 엔티티를 프록시로 조회한다. 프록시를 실제 사용할 때 초기화하면서 데이터베이스를 조회한다.
 * 즉시 로딩
 연관된 엔티티를 즉시 조회한다. 하이버네이트는 가능하면 sql 조인을 통해 한 번 조회한다.
+
+## 지연로딩 활용
+* 회원과 팀(N:1)
+    * 회원과 팀은 자주 함께 사용 -> 즉시 로딩
+* 회원과 주문(1:N)
+    * 회원과 주문은 가끔 사용 -> 지연 로딩
+* 주문과 상품정보(N:1)
+    * 주문과 상품은 자주 함께 사용 -> 즉시 로딩
+```java
+@Entity
+@Getter
+@Setter
+public class Member {
+    
+    @Id
+    private String id;
+    private String username;
+    private Integer age;
+
+    @ManyToOne(fetch = FetcyType.EAGER) //  즉시 조회
+    private Team team;
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY) //  프록시로 조
+    private List<Order> order;
+
+}
+```    
+* 회원을 조회할 때 실행되는 SQL
+```sql
+SELECT
+    MEMBER.ID AS MEMBERID,
+    MEMBER.AGE AS AGE,
+    MEMBER.TEAM_ID AS TEAM_ID,
+    MEMBER.USERNAME AS USERNAME,
+    TEAM.ID AS TEAMID,
+    TEAM.NAME AS NAME
+FROM
+    MEMBER MEMBER
+LEFT OUTER JOIM
+    TEAM TEAM ON MEMBER.TEAM_ID=TEAM1_.ID
+WHERE
+    MEMBER0_.ID='member1'
+```
+회원과 팀은 즉시 로딩이므로 조인 쿼리를 통해 회원과 팀이 한꺼번에 조회된다.<br>
+회원과 주문은 지연 로딩이므로 결과를 프록시로 조회한다. 따라서 sql에 나타나지 않는다.<br>
+회원을 조회한 후 member.getTeam()을 호출하면 이미 로딩된 팀 엔티티를 반환한다.
+
+### 프록시와 컬렉션 래퍼
+> 프록시 객체는 실제 자신이 사용될 때 까지 데이터베이스를 조회하지 않는다.
+
+* 컬렉션 래퍼
+엔티티를 영속 상태로 마들 때 엔티티에 컬렉션이 있으면 `컬렉션을 추적/관리할 목적`으로 원본 컬렉션을 하이버네이트가 제공하는 내장 컬렉션으로 변경된 것을 말한다. 컬랙션 래퍼도 프록시 역할을 수행한다.<br>
+
+엔티티를 지연 로딩하면 프록시 객체가 지연 로딩을 수행하지만 `컬렉션은 컬렉션 래퍼가 지연 로딩을 처리`해준다. 다만, 차이가 있다면 컬렉션 래퍼는 컬랙션이기 때문에 엔티티를 조회하듯이 member.getOrder()를 호출해도 컬렉션은 초기화되지 않는다. `member.getOrder().get(0)`처럼 컬렉션에서 실제 데이터를 조회하게 될 때 데이터베이스를 조회해서 초기화한다.
+
+### JPA 기본 fetch 전략
+* @ManyToOne, @OneToOne : 즉시 로딩(FetchType.EAGER)
+* @OneToMany, @ManyToMany : 지연 로딩(FetchType.LAZY)
+연관된 엔티티가 하나면 즉시 로딩, 컬렉션이면 지연 로딩을 사용한다. 컬렉션을 로딩하는 것은 비용이 많이 들고 잘못하면 너무 많은 데이터를 로딩할 수 있기 때문이다.
+
+### 컬렉션에 FetchType.EAGER 사용 시 주의점
+* 컬렉션을 하나 이상 즉시 로딩하는 것은 좋지 않다.
+
+컬렉션과 조인한다는 것은 일대다를 의미하므로 너무 많은 데이터를 반환하게되어 애플리케이션 성능이 저하될 수 있기 때문에 2개 이상의 컬렉션을 즉시 로딩으로 설정하는 것은 권장되지 않는다.
+* 컬렉션 즉시 로딩은 항상 외부 조인을 사용한다.
+
+일대다 관계인 팀 테이블에서 회원 테이블로 조인할 때 회원이 한 명도 없는 팀을 내부 조인하게 되면 팀까지 조회되지 않는 문제가 발생하기 때문에 JPA는 일대다 관계를 즉시 로딩할 때 항상 외부 조인을 사용한다.
+
+> * @ManyToOne, @OneToOne
+>   * (optional = false): 내부 조인
+>   * (optional = true) : 외부 조인
+> * @OneToMany, @ManyToMany
+>   * (optional = false): 외부 조인
+>   * (optional = true) : 외부 조인\
+
+## 영속성 전이: CASCADE
+특정 엔티티를 영속 상태로 만들 때 연관된 엔티티도 함께 영속 상태로 만들고 싶으면 영속성 전이(transitive persistence) 기능을 사용하면 된다.<br>
+JPA는 CASCADE 옵션으로 영속성 전이를 제공한다.
+> 즉, 영속성 전이를 통해 부모 엔티티와 자식 엔티티가 함께 영속성 관리를 받게 된다.
+
+JPA에서 엔티티를 저장할 때 연관된 모든 엔티티는 영속 상태여야 한다. CASCADE 옵션을 사용하면 별도로 부모 엔티티를 영속 상태로 만들고 또 자식 엔티티를 영속 상태를 만드는 번거로움 없이 부모만 영속 상태로 만들면 연관된 자식까지 한 번에 영속 상태로 만들 수 있다.
+
+### 영속성 전이: 저장
+```java
+@Entity
+public class Parent {
+    ...
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.PERSIST)
+    private List<Child> children = new ArrayList<Child>(); 
+}
+```
+위 코드처럼 casecade = CascadeType.PERSIST 옵션을 설정하면 부모와 자식 엔티티를 한 번에 영속화 할 수 있다.
+
+```java
+private static void saveWithCascade(EntityManager em) {
+    Child child1 = new Child();
+    Child child2 = new Child();
+
+    Parent parent = new Parent();
+    child1.setParent(parent);    //  연관관계 추가
+    child2.setParent(parent);    //  연관관계 추가
+    parent.getChildren().add(child1);
+    parent.getChildren().add(child2);
+
+    //  부모 저장, 연관된 자식들 저장
+    em.persist(parent);
+}
+```
+영속성 전이는 연관관계를 매핑하는 것과는 아무 관련이 없다. 단지 엔티티를 영속화할 때 연관된 엔티티도 같이 영속화하는 편리함을 제공할 뿐이다. 그래서 위 소스도 양방향 연관관계를 추가한 후 영속 상태로 만든 것을 확인할 수 있다.
+
+> cascade를 통한 영속성 전이와 manytoone 연관관계에서 many쪽 엔티티에 저장할 때 one쪽도 저장되는 것의 차이는?
+
+### 영속성 전이: 삭제
+`CascadeType.REMOVE`를 설정하여 부모 엔티티만 삭제해도 연관된 자식 엔티티도 함께 삭제 가능하다.
+```java
+Parent findParent = em.find(Parent.class, 1L);
+em.remove(findParent);
+```
+코드를 실행하면 DELETE SQL 3번 실행하고 부모는 물론 연관된 자식도 모두 삭제한다. 삭제 순서는 외래 키 제약조건을 고려하여 자식을 먼저 삭제한 후 부모를 삭제한다.<br>
+만약, CascadeType.REMOVE를 설정하지 않고 코드를 실행하게 되면 부모 엔티티만 삭제되나, 데이터베이스에서 부모 로우를 삭제하는 순간 자식 테이블에 걸려있는 외래 키 제약조건에 의해 데이터베이스에서 외래키 무결성 예외가 발생한다.
+
+### CASCADE 종류
+```java
+public enum CascadeType {
+
+    /** Cascade all operations */
+    ALL,
+
+    /** Cascade persist operation */
+    PERSIST,
+
+    /** Cascade merge operation */
+    MERGE,
+
+    /** Cascade remove operation */
+    REMOVE,
+
+    /** Cascade refresh operation */
+    REFRESH,
+
+    /**
+     * Cascade detach operation
+     *
+     * @since Java Persistence 2.0
+     *
+     */
+    DETACH
+}
+```
+`casecade = {CascadeType.PERSIST, CascadeType.REMOVE}` 와 같은 형식으로 여러 속성을 같이 사용할 수도 있다.
+
+> CascadeType.PERSIST, CascadeType.REMOVE는 em.persist(), em.remove() 실행 시 바로 전이가 발생되지 않고 `flush를 호출할 때 전이가 발생`한다.
+
+## 고아 객체
+부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제하는 기능을 `고아 객체(ORPHAN) 제거`라 한다. 이 기능을 통해 부모 엔티티의 컬렉션에서 자식 엔티티의 참조만 제거하면 자식 엔티티가 자동으로 삭제될 수 있다.
+```java
+@Entity
+public class Parent {
+
+    @Id @GeneratedValue
+    private Long id;
+
+    @OneToMany(mappedBy = "parent", orphanRemoval = true)
+    private List<Child> childrent = new ArrayList<Child>();
+    ...
+}
+
+Parent parent1 = em.find(Parent.class, id);
+parent1.getChildren().remove(0);    //  자식 엔티티를 컬렉션에서 제거
+```
+위와 같이 실행하게 되면 `DELETE FROM CHILD WHERE ID=?` 와 같은 sql이 실행된다.<br>
+`orphanRemoval = true` 옵션으로 인해 `컬렉션에서 엔티티를 제거하면 데이터베이스의 데이터도 삭제`된다. 고아 객체 제거 기능은 영속성 컨텍스트를 flush할 때 적용되므로 flush 시점에 DELETE sql이 실행된다.<br>
+모든 자식 엔티티 제거는 아래와 같이 모든 컬렉션을 비우면 된다.
+```java
+parent1.getChildrent().clear();
+```
+
+고아 객체 제거는 `참조가 제거된 엔티티는 다른 곳에서 참조하지 않는 고아 객체로 보고 삭제하는 기능`이다. 따라서 이 기능은 참조되는 곳이 하나일 때만 사용해야 한다. 만약 삭제한 엔티티가 다른 곳에서도 참조한다면 문제가 발생할 수 있다.
+> orphanRemoval은 @OneToOne, @OneToMany에만 사용할 수 있다.
+
+개념적으로 부모를 제거할때도 자식은 고아가 되기 때문에 부모를 제거하면 자식도 제거된다. 이는 CascadeType.REMOVE를 설정한 것 과 같다.
+
+## 영속성 전이 + 고아 객체, 생명주기
+`CascadeType.ALL + orphanRemovall = true`를 동시에 사용하게 되면, 부모 엔티티를 통해 자식의 생명 주기를 관리할 수 있다.
+
+> 영속성 전이는 DDD의 Aggregate Root 개념 구현에 용이하다.
+
+## 정리
+* JPA 구현체들은 객체 그래프를 마음껏 탐색할 수 있도록 지원하는데 이 때 `proxy`기술을 사용한다.
+* 객체 조회 시, 연관된 객체를 즉시 조회해오는 방법을 `즉시 로딩`이라 하고 연관된 객체를 지연해서 조회해오는 방법을 `지연 로딩`이라고 한다.
+* 객체를 저장하거나 삭제할 때, 연관된 객체도 함께 저장하거나 삭제할 수 있는데 이를 `영속성 전이`라 한다.
+* 부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제하려면 `고아 객체 제거 기능`을 사용한다.
