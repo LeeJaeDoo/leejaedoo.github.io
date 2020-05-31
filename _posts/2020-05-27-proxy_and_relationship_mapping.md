@@ -132,6 +132,7 @@ class MemberProxy extends Member {
 > 프록시 객체 타입 체크 시 주의해야 하는 이유는?
 
 * 준영속 상태와 초기화
+
 ```java
 //  MemberProxy 반환
 Member member = em.getReference(Member.class, "id1");
