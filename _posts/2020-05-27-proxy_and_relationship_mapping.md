@@ -90,6 +90,7 @@ JPA는 이러한 문제를 `지연 로딩`이라는 기술을 활용하여 해�
 
 * 프록시 객체의 초기화
 프록시 객체의 초기화란, member.getName() 처럼 실제 사용될 때 데이터베이스를 조회해서 `실제 엔티티 객체를 생성하는 행위`를 말한다.
+
 ```java
 //MemberProxy 반환
 Member member = em.getReference(Member.class, "id1");
