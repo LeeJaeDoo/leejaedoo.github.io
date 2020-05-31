@@ -311,6 +311,7 @@ public class Member {
 }
 ```    
 * 회원을 조회할 때 실행되는 SQL
+
 ```sql
 SELECT
     MEMBER.ID AS MEMBERID,
@@ -438,6 +439,7 @@ public enum CascadeType {
 
 ## 고아 객체
 부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제하는 기능을 `고아 객체(ORPHAN) 제거`라 한다. 이 기능을 통해 부모 엔티티의 컬렉션에서 자식 엔티티의 참조만 제거하면 자식 엔티티가 자동으로 삭제될 수 있다.
+
 ```java
 @Entity
 public class Parent {
