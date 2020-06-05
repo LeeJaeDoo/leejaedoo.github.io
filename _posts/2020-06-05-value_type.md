@@ -221,3 +221,68 @@ CREATE TABLE MEMBER (
 
 ### 임베디드 타입과 null
 임베디드 타입이 null이면 매핑한 컬럼 값은 모두 null이 된다.
+
+## 값 타입과 불변 객체
+### 값 타입 공유 참조
+임베디드 타입 같은 값 타입을 여러 엔티티에서 공유하면 위험하다. 때문에 값을 복사하여 사용해야 한다.
+### 값 타입 복사
+```java
+member1.setHomeAddress(new Address("OldCity"));
+Address address = member1.getHomeAddress();
+
+//  회원1의 address 값을 복사해서 새로운 newAddress 값을 생성
+Address newAddress = address.clone();
+
+newAddress.setCity("NewCity");
+member2.setHomeAddress(newAddress);
+```
+
+회원1의 주소 인스턴스를 복사해 사용하므로써 의도된대로 영속성 컨텍스트는 회원2의 주소만 변경된 것으로 판단하여 회원2에 대해서만 UPDATE SQL을 실행한다.<br>
+이렇게 항상 값을 복사해서 사용하면 공유 참조로 인해 발생하는 부작용을 피할 수 있다.
+
+> 문제는 객체 타입이다. 임베디드 타입처럼 직접 정의한 값 타입은 `자바의 기본 타입이 아니라 객체 타입`이다.
+
+객체 타입은 객체에 값을 대입하면 항상 참조 값을 전달한다. 따라서 `참조 값을 넘겨 받은 두 객체는 같은 인스턴스를 공유하게 된다.`
+
+> 객체의 공유 참조는 피할 수 없다.
+
+근본적인 해결책은 단순한 방법으로, 객체의 값을 수정하지 못하게 막으면 된다. (ex. Address객체의 setCity() 같은 수정자 메소드를 모두 제거)
+
+### 불변 객체
+값 타입은 부작용이 발생하면 안된다. 객체를 불변하게 만들면 값을 수정할 수 없으므로 부작용을 원천 차단할 수 있다. 따라서 값 타입은 될 수 있으면 불변 객체(Immutable Object)로 설계해야 한다.<br>
+불변 객체의 값은 조회할 수 있지만 수정할 수 없다. 불변 객체도 결국 객체이기 때문에 인스턴스의 참조 값 공유를 피할 수는 없지만, 참조 값을 공유해도 수정할 수 없기 때문에 부작용이 발생할 수 없다.
+
+> 생성자로만 값을 설정하고 수정자를 만들지 않음으로써 불변 객체를 생성할 수 있다.
+
+```java
+@Embeddable
+public class Address {
+    
+    private String city;
+
+    protected Address();    //  JPA에서 기본 생성자는 필수다.
+
+    //  생성자로 초기 값을 설정한다.
+    public Address(String city) {
+        this.city = city;
+    }
+
+    //  접근자(Getter)는 노출한다.
+    public String getCity() {
+        return city;
+    }
+
+    //  수정자(Setter)는 만들지 않는다.
+}
+``` 
+
+즉, 불변 객체를 활용함으로써 객체 타입의 부작용을 해결할 수 있다.
+
+## 값 타입의 비교
+* 동일성(Identity) 비교 : 인스턴스의 참조 값을 비교. == 사용
+* 동등성(Equality) 비교 : 인스턴스의 값을 비교. equals() 사용
+
+Address 값 타입을 a == b로 동일성 비교하면 둘은 서로 다른 인스턴스이므로 결과는 거짓이 나오지만, 값 타입은 인스턴스가 달라도 그 안에 값이 같으면 같은 것으로 봐야하기 때문에 a.equals(b)를 사용해서 동등성 비교를 해야 한다.
+> Address의 equals() 재정의는 필요하다.
+
+> 자바에서 equals()를 재정의하면 hashCode()도 재정의하는 것이 안전하다. 그렇지 않으면 해시를 사용하는 컬렉션(HashSet, HashMap)이 정상 동작하지 않는다.
