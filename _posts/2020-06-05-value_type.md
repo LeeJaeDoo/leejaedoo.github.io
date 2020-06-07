@@ -393,6 +393,7 @@ member.favoriteFoods : LAZY로 설정해서 `실제 컬렉션을 사용할 때` 
 member.addressHistory : LAZY로 설정해서 `실제 컬렉션을 사용할 때` SELECT SQL을 1번 호출한다.
 
 * 값 타입 컬렉션을 수정할 경우
+
 ```java
 Member member = em.find(Member.class, 1L);
 
