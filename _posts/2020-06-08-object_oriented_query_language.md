@@ -57,4 +57,100 @@ public class Member {
 String jpql = "select m from Member as m where m.username = 'kim'";
 List<Member> resultList = em.createQuery(jpql, Member.class).getResultList();
 ```
-    
+em.createQuery() 메소드를 통해 실행할 JPQL과 반환할 엔티티의 클래스 타입인 Member.class 를 넘겨주고 getResultList() 메소드를 통해 JPA는 JPQL을 SQL로 변환하여 데이터베이스를 조회한다.
+
+* 실행된 JPQL
+
+```sql
+select m
+from Member as m
+where m.username = 'kim'
+```
+
+* 실제 실행된 SQL
+
+```sql
+SELECT
+    member.id AS id,
+    member.age AS age,
+    member.team_id AS team,
+    member.name AS name
+FROM
+    Member member
+WHERE
+    member.name = 'kim'
+```
+### Criteria 쿼리 소개
+
+> JPQL을 생성하는 빌더 클래스
+
+* 장점
+문자가 아닌 query.select(m).where(...) 처럼 프로그래밍 코드로 JPQL을 작성할 수 있다.<br>
+코드로 JPQL을 작성하기 때문에 런타임이 아닌 `컴파일 시점에 오류를 발견`할 수 있다.
+    * 컴파일 시점에 오류를 발견할 수 있다.
+    * IDE를 사용하면 코드 자동완성을 지원한다.
+    * 동적 쿼리를 작성하기 편하다.
+
+```java
+// JPQL
+select m from Member as m where m.username = 'kim'
+
+// Criteria 사용 준비
+CriteriaBuilder cb = em.getCriteriaBuilder();
+CriteriaQuery<Member> query = cb.createQuery(Member.class);
+
+// 루트 클래스(조회를 시작할 클래스)
+Root<Member> m = query.from(Member.class);
+
+// 쿼리 생성
+CriteriaQuery<Member> cq = query.select(m).where(cb.equal(m.get("username"), "kim"));
+List<Member> resultList = em.createQuery(cq).getResultList();
+```
+위와 같이 Criteria를 활용하여 쿼리를 문자가 아닌 코드로 작성할 수 있다.<br>
+아쉬운 점은 m.get("username") 처럼 필드 명을 코드가 아닌 문자로 작성한 것인데 `메타 모델(MetaModel)`을 활용하면 해결할 수 있다.<br>
+
+```java
+//  메타 모델 사용 전 -> 사용 후
+m.get("username") -> m.get(Member_.username)
+```
+"username"대신 Member_.username이라는 코드로 활용할 수 있다. 하지만 복잡하고 장황해진다. 가독성도 떨어진다.
+
+### QueryDSL 소개
+
+> Criteria와 마찬가지로 JPQL 빌더 역할을 한다.
+
+* 장점
+코드 기반이면서 단순하고 사용하기 쉽다. 작성한 코드도 JPQL과 비슷해서 한눈에 들어온다.
+
+> QueryDSL은 JPA 표준은 아니고 오픈소스 프로젝트이다.
+
+```java
+// 준비
+JPAQuery query = new JPAQuery(em);
+QMember member = QMember.member;
+
+// 쿼리, 결과조회
+List<Member> members = query.from(member).where(member.username.eq("kim")).list(member);
+```
+
+queryDSL도 어노테이션 프로세서를 사용하여 쿼리 전용 클래스(Qclass)를 만들어야 한다.
+
+### 네이티브 SQL 소개
+JPA에서 SQL을 직접 사용할 수 있는 기능을 제공하는데 이를 네이티브 SQL이라고 한다.<br>
+JPQL을 사용해도 가끔 특정 데이터베이스에 의존하는 기능을 사용해야 할 때가 있는데, (ex. Oracle CONNECT BY 기능이나 특정 데이터베이스에서만 동작하는 SQL 힌트) 이런 기능들은 JPQL로 구현할 수 없다.<br>
+이처럼 SQL만 지원되고 JPQL에서는 지원되지 않는 기능을 사용해야 할 때 네이티브 SQL을 사용하면 된다.
+
+> 단점 : 특정 데이터베이스에 의존하는 SQL을 작성해야 한다. 따라서 SQL 의존성이 높은 코딩을 할 수 밖에 없다.
+
+```java
+String sql = "SELECT ID, AGE, TEAM_ID, NAME FROM MEMBER WHERE NAME = 'kim'";
+List<Member> resultList = em.createNativeQuery(sql, Member.class).getResultList();
+```
+
+네이티브 SQL은 em.createNativeQuery() 를 사용하면 된다.
+
+### JDBC 직접 사용, MyBatis 같은 SQL Mapper 프레임워크 사용
+JDBC나 MyBatis를 JPA와 함께 사용하면 `영속성 컨텍스트를 적절한 시점에 강제로 flush`해야 한다. 둘 모두 JPA를 우회해서 데이터베이스에 접근하기 때문에 JDBC나 MyBatis를 활용한 SQL은 JPA에서 인식하지 못하게 된다. 결과적으로 최악의 경우에는 `영속성 컨텍스트와 데이터베이스의 불일치 상태가 발생하여 데이터 무결성이 훼손`될 수 있다.<br>
+> 이런 이슈를 해결하기 위해 `JPA를 우회해서 SQL을 실행하기 직전에 영속성 컨텍스트를 수동으로 flush`하여 `데이터베이스와 영속성 컨텍스트를 동기화`하면 된다.
+> 스프링 AOP를 활용하여 JPA를 우회하여 데이터베이스에 접근하는 메소드를 실행할 때 마다 영속성 컨텍스트를 flush하면 위 이슈를 해결할 수 있다.
+ 
