@@ -517,7 +517,7 @@ where t.name = '팀A'
 // 실행된 SQL
 SELECT T.*, M.*
 FROM TEAM t
-INNER JON MEMBER M ON T.ID=M=TEAM_ID
+INNER JOIN MEMBER M ON T.ID=M=TEAM_ID
 WHERE T.NAME = '팀A'
 ```
 ![fetch조인](../assets/img/collection_fetch.jpg)
@@ -564,6 +564,7 @@ where t.name = '팀A'
 ![fetch조인](../assets/img/fetch_join_distinct.jpg)
 
 * 페치 조인 vs 일반 조인
+
 ```sql
 // JPQL 내부 조인
 select t
