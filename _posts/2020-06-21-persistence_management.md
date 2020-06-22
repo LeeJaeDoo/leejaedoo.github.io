@@ -1,5 +1,5 @@
 ---
-date: 2020-06-08 22:27:40
+date: 2020-06-20 22:27:40
 layout: post
 title: 자바 ORM 표준 JPA 프로그래밍
 subtitle: 13. 웹 애플리케이션과 영속성 관리
