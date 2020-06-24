@@ -172,3 +172,94 @@ member.getId().equals(findMember.getId());  // 데이터베이스 식별자 비�
 
 ### 정리
 같은 영속성 컨텍스트의 관리를 받는 영속 상태의 엔티티끼리만 동일성 비교가 가능하다. 다른 영속성 컨텍스트에서는 비즈니스 키를 사용한 동등성 비교를 해야 한다.
+
+## 프록시 심화 주제
+프록시는 원본 엔티티를 상속받아 만들어지므로 원본 엔티티를 사용하다가 지연 로딩을 위해 프록시로 변경해도 비즈니스 로직의 수정이 필요 없다. 하지만 이러한 프록시 방식의 기술적 한계로 예기치 못한 오류를 만날 수 있다.
+
+### 영속성 컨텍스트와 프록시
+영속성 컨텍스트는 자신이 관리하는 영속 엔티티의 동일성을 보장한다. 그렇다면 프록시는? `프록시도 조회한 엔티티도 동일성이 보장`된다.<br>
+영속서 컨텍스트는 프록시로 조회된 엔티티에 대해 같은 엔티티를 찾는 요청이 오면 원본 엔티티가 아닌 처음 조회된 프록시를 반환한다.<br>
+
+> 처음 em.getReference() 메소드를 사용해서 프록시로 엔티티를 조회한 후 em.find()로 원본 엔티티를 조회해도 처음 조회된 프록시를 반환한다.
+
+원본 엔티티를 먼저 조회한 경우에는 당연히 처음 조회된 후 영속성 컨텍스트에 이미 원본 엔티티가 남아있으므로 em.getReference()를 호출해도 원본 엔티티가 반환된다.
+
+### 프록시 타입 비교
+프록시는 원본 엔티티를 상속 받아서 만들어진 것이므로 프록시로 조회한 엔티티의 타입 비교시 == 가 아닌 instanceof를 사용해야 한다.
+
+### 프록시 동등성 비교
+엔티티의 동등성 비교는 비즈니스 키를 사용해서 equals() 메소드를 오버라이디앟고 비교하면 된다.<br>
+그런데, IDE나 외부 라이브러리를 사용하여 구현한 equals() 메소드로 엔티티를 비교할 때, 비교 대상이 원본 엔티티면 문제 없지만 프록시면 문제가 될 수 있다.
+
+* 프록시 동등성 비교, 회원 엔티티
+
+```java
+@Entity
+public class Member {
+    
+    @Id
+    private String id;
+    private String name;
+
+    ...
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getCloass()) return false;   //  1.
+    
+        Member member = (Member) obj;
+        
+        if (name != null ? !name.equals(member.name) : member.name != null) //  2.
+            return false;
+
+        return true; 
+    }
+
+    @Override
+    public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
+}
+```
+회원 엔티티는 name 필드를 비즈니스 키로 사용해서 equals() 메소드를 오버라이딩 했다.
+
+* 프록시 동등성 비교. 실행
+
+```java
+@Test
+public void 프록시와_동등성비교() {
+
+    Member saveMember = new Member("member1", "회원1");
+
+    em.persist(saveMember);
+    em.flush();
+    em.clear();
+
+    Member newMember = new Member("member1", "회원1");
+    Member refMember = em.getReference(Member.class, "member1");
+
+    Assert.assertTrue( newMember.equals(refMember) );
+}
+```
+
+새로 생성한 newMember와 프록시로 조회한 회원 refMember의 name 속성은 동등성 비교를 해보면 false가 반환된다. 프록시가 아닌 원본 엔티티를 조회해서 비교해야 true가 반환된다.<br>
+먼저 1번 부분에서 동등성이 아닌 동일성(==)비교를 하기 때문이다. 따라서 1번은 아래와 같이 수정돼야 한다.
+```java
+if (!(obj instanceof Member)) return false;
+```
+그 다음은 2번 부분을 보면 프록시의 멤버 변수에 직접 접근하는데, 프록시는 실제 데이터를 가지고 있지 않기 때문에 프록시의 멤버 변수에 직접 접근하면 아무 값도 얻을 수 없다. 따라서 member.name의 결과는 null이고 equals()는 false가 반환된다.<br>
+`프록시의 데이터를 조회할 때는 접근자(Getter)를 사용`해야 한다. 따라서 2번은 아래와 같이 수정돼야 한다.
+```java
+Member member = (Member) obj;
+
+if (name != null ? !name.equals(member.getName()) : member.getName() != null)
+    return false;
+```
+
+* 프록시의 타입 비교는 == 가 대신 `instanceof`를 사용해야 한다.
+* 프록시의 멤버 변수에 직접 접근하는 것이 아닌 접근자 메소드를 사용해야 한다.
+
