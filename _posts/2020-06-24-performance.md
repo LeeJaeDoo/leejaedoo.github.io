@@ -263,3 +263,133 @@ if (name != null ? !name.equals(member.getName()) : member.getName() != null)
 * 프록시의 타입 비교는 == 가 대신 `instanceof`를 사용해야 한다.
 * 프록시의 멤버 변수에 직접 접근하는 것이 아닌 접근자 메소드를 사용해야 한다.
 
+### 상속관계와 프록시
+프록시를 부모 타입으로 조회하면 문제가 발생한다.<br>
+![상속관계와 프록시2](../assets/img/proxy2.jpeg)
+```java
+Item proxyItem = em.getReference(Item.class, saveBook.getId());
+```
+em.getReference() 메소드를 사용해서 Item 엔티티를 프록시로 조회하면 실제 조회된 엔티티는 Book 이기 때문에 Book 타입을 기반으로 원본 엔티티 인스턴스가 생성된다.<br>
+그런데 em.getReference() 메소드에서 Item 엔티티를 대상으로 조회했으므로 프록시인 proxyItem은 Item 타입을 기반으로 만들어진다. 따라서 proxyItem 프록시 클래스는 원본 엔티티로 Book 엔티티를 참조한다.<br>
+따라서 `proxyItem instanceof Book` 연산은 `false`를 반환한다. 왜냐하면 프록시인 proxyItem은 Item$Proxy 타입이고 이 타입은 Book 타입과 관계가 없기 때문이다.<br>
+따라서 직접 다운캐스팅을 해도 문제가 발생한다.
+```java
+Book book = (Book) proxyItem;   //  java.lang.ClassCastException
+```
+proxyItem은 Book 타입이 아닌 Item 타입은 기반으로 한 Item$Proxy 타입이다. 따라서 ClassCastException 예외가 발생한다.
+
+> 프록시를 부모 타입으로 조회하면 부모의 타입을 기반으로 프록시가 생성되는 문제가 있다.
+
+* instanceof 연산을 사용할 수 없다.
+* 하위 타입으로 다운캐스팅을 할 수 없다.
+
+* 다형성과 프록시 조회 정의
+
+```java
+@Entity
+public class OrderItem {
+    
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ITEM_ID")
+    private Item item;
+
+    ...
+}
+
+```
+OrderItem에서 Item을 지연 로딩으로 설정해서 Item이 프록시로 조회된다. 따라서 똑같이 item instanceof Book 은 false를 반환한다.
+
+이에 대한 해결책은 아래와 같다.
+
+#### JPQL 로 대상 직접 조회
+처음부터 자식 타입을 직접 조회해서 필요한 연산을 하는 방법이다. 단, 다형성을 활용할 수 없다.
+```java
+Book jpqlBook = em.createQuery("select b from Book b where b.id=:bookId", Book.class)
+                  .setParameter("bookId", item.getId())
+                  .getSingleResult();
+```
+#### 프록시 벗기기
+```java
+...
+Item item = orderItem.getItem();
+Item unProxyItem = unProxy(item);
+
+if (unProxyItem instanceof Book) {
+    System.out.println("proxyItem instanceof Book");
+    Book book = (Book) unProxyItem;
+    System.out.println("책 저자 = " + book.getAuthor());
+}
+
+Assert.assertTrue(item != unProxyItem);
+
+//  하이버네이트가 제공하는 프록시에만 원본 엔티티를 찾는 기능을 사용하는 메소드
+public static <T> T unProxy(Object entity) {
+    if (entity instanceof HibernateProxy) {
+        entity = ((HibernateProxy) entity).getHibernateLazyInitializer()
+                                          .getImplementation();  
+    }
+    return (T) entity;
+}
+```
+그러나 이 방법은 프록시에서 원본 엔티티를 직접 꺼내기 때문에 `프록시와 원본 엔티티의 동일성 비교가 실패`한다는 문제점이 있다.
+
+> 하지만, 원본 엔티티의 값을 직접 변경해도 변경 감지 기능은 동작한다.
+
+#### 기능을 위한 별도의 인터페이스 제공
+![상속관계와 프록시3](../assets/img/proxy3.jpeg)
+```java
+public interface TitleView {
+    String getTitle();
+}
+
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "DTYPE")
+public abstract class Item implements TitleView {
+    
+    @Id @GeneratedValue
+    @Column(name = "ITEM_ID")
+    private Long id;
+
+    private String name; 
+    private int price;
+    private int stockQuantity;
+
+    ...
+}
+
+@Entity
+@DiscriminatorValue("B")
+public class Book extends Item {
+    
+    private String author; 
+    private String isbn;
+
+    @Override
+    public String getTitle() {
+        return "[제목:" + getName() + " 저자:" + author + "]";
+    }
+}
+
+@Entity
+@DiscriminatorValue("M")
+public class Movie extends Item {
+    
+    private String director;
+    private String actor;
+
+    ...
+
+    @Override
+    public String getTitle() {
+        return "[제목:" + getName() + " 감독:" + director + " 배우:" + actor + "]";
+    }
+}
+```
+TitleView라는 공통 인터페이스를 만들고 자식 클래스들은 인터페이스의 getTitle() 메소드를 각각 구현한다.
+
+
+#### 비지터 패턴 사용
