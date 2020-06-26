@@ -547,5 +547,191 @@ INNER JOIN ORDERS O ON M.ID=O.MEMBER_ID     // 실행된 SQL
 
 이 예제는 참고로 일대다 조인을 했기 때문에 결과가 늘어나서 중복된 결과가 나타날 수 있다. 따라서 JPQL의 DISTINCT를 사용해서 중복을 제거하는 것 이좋다.
 #### 하이버네이트 @BatchSize
-@BatchSize 어노테이션을 사용해서 연관된 엔티티를 조회할 때 지정한 size 만큼 SQL의 IN 절을 사용해서 조회한다. 조회한 회원이 10명인데 size=5로 지정하면 2번의 SQL만 추가로 실행한다.k
+@BatchSize 어노테이션을 사용해서 연관된 엔티티를 조회할 때 지정한 size 만큼 SQL의 IN 절을 사용해서 조회한다. 조회한 회원이 10명인데 size=5로 지정하면 2번의 SQL만 추가로 실행한다.
+```java
+@Entity
+public class Member {
+    ...
+    @BatchSize(size = 5)
+    @OneToMany(mappedBy = "member", fetch = FetchType.EAGER)
+    private List<Order> orders = new ArrayList<>();
+    ...
+}
+```
+* 즉시 로딩 시 : 조회 시점에 10건의 데이터를 모두 조회해야 하므로 두 번으로 나눠서 실행된다.
+* 지연 로딩 시 : 지연 로딩된 엔티티를 최초 사용하는 시점에 다음 SQL을 실행해서 5건의 데이터를 미리 로딩해둔다. 그리고 6번째 데이터를 사용하면 다음 SQL을 추가로 실행한다.
+
+```sql
+SELECT * FROM ORDERS
+WHERE MEMBER_ID IN (?, ?, ?, ?, ?)
+```
+
+> hibernate.default_batch_fetch_size 속성을 사용하면 애플리케이션 전체에 기본으로 @BatchSize를 적용할 수 있다.
+
 #### 하이버네이트 @Fetch(FetchMode.SUBSELECT)
+@Fetch 어노테이션에 FetchMode를 SUBSELECT로 사용하면 연관된 데이터를 조회할 때 서브 쿼리를 사용해서 N+1 문제를 해결한다.
+```java
+@Entity
+public class Member {
+    ...
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "member", fetch = FetchType.EAGER)
+    private List<Order> orders = new ArrayList<>();
+    ...
+}
+```
+다음과 같이 식별자 값이 10을 초과하는 회원 엔티티를 모두 조회하는 JPQL이 있다.
+```sql
+select m from Member m where m.id > 10;
+```
+* 즉시 로딩 시 : 조회 시점에 다음 SQL이 실행된다.
+* 지연 로딩 시 : 지연 로딩된 엔티티를 사용하는 시점에 SQL이 실행된다.
+
+```sql
+SELECT O FROM ORDERS O
+    WHERE O.MEMBER_ID IN (
+        SELECT
+            M.ID
+        FROM
+            MEMBER M
+        WHERE M.ID > 10
+    )
+``` 
+
+#### N+1 정리
+* 즉시 로딩 전략의 문제점
+    * N+1 문제
+    * 비즈니스 로직에 따라 필요하지 않은 엔티티를 로딩해야 하는 상황이 발생함.
+    * 성능 최적화가 어렵다. - 엔티티를 조회하다 보면 즉시 로딩이 연속으로 발생해서 예상치 못한 SQL이 실행될 수 있다.
+
+* 대안
+    * 모두 지연 로딩으로 설정
+    * 성능 최적화가 꼭 필요한 곳에는 JPQL 페치 조인을 사용
+    
+### 읽기 전용 쿼리의 성능 최적화
+엔티티가 영속성 컨텍스트에 관리되면 1차 캐시부터 변경 감지까지 얻을 수 있는 혜택이 많다. 하지만 영속성 컨텍스트는 변경 감지를 위해 스냅샷 인스턴스를 보관하므로 더 많은 메모리를 사용하는 단점이 있다.<br>
+이럴 때, 즉, 조회한 엔티티를 다시 조회할 일도 없고, 수정할 일도 없는 경우, `읽기 전용`으로 엔티티를 조회하면 `메모리 사용량을 최적화`할 수 있다.
+#### 읽기 전용 쿼리 사용 방법
+* 스칼라 타입으로 조회
+    * 스칼라 타입은 영속성 컨텍스트가 결과를 관리하지 않는다.
+* 읽기 전용 쿼리 힌트 사용
+    * org.hibernate.readOnly를 사용한다. 
+    * 읽기 전용이므로 영속성 컨텍스트에 스냅샷을 저장하지 않기 떄문에 메모리 사용량을 최적화 할 수 있다.
+    * 스냅샷이 없기 때문에 변경 감지가 동작하지 않아 데이터베이스에 수정할 수 없다.
+* 읽기 전용 트랜잭션 사용
+    * 스프링 프레임워크의 @Transactional(readOnly = true) 어노테이션으로 읽기 전용 모드를 설정할 수 있다.
+    * 하이버네이트 세션의 flush모드를 MANUAL로 설정하게 되면서 강제로 flush를 호출하지 않는 한, flush가 일어나지 않는다. 따라서 트랜잭션을 커밋해도 영속성 컨텍스트를 flush하지 않는다.
+    * 물론, 트랜잭션을 시작했으므로 트랜잭션 시작, 로직수행, 트랜잭션 커밋의 과정은 이뤄진다. 단지 영속성 컨텍스트를 flush하지 않을 뿐이다.
+* 트랜잭션 밖에서 읽기
+    * 스프링 프레임워크의 @Transactional(propagation = Propagation.NOT_SUPPORTED)를 활용한다.
+    * 기본적으로 flush모드는 AUTO로 설정되어있기 때문에 트랜잭션을 커밋하거나 쿼리를 실행하면 flush가 작동한다. 그런데 트랜잭션 자체가 존재하지 않으므로 트랜잭션을 커밋할 일이 없다.
+
+> JPQL 쿼리도 트랜잭션 없이 실행하면 flush를 호출하지 않는다.
+
+### 배치 처리
+수백만 건의 배치를 처리해야 할 때 일반적인 방식으로 엔티티를 계속 조회하면 영속성 컨텍스트에 아주 많은 엔티티가 쌓이면서 메모리 부족 오류가 발생한다. 따라서 이러한 경우에는 배치 처리를 적절한 단위로 영속성 컨텍스트를 초기화해야 한다.<br>
+또한, 2차 캐시를 사용하고 있다면 2차 캐시에 엔티티를 보관하지 않도록 주의해야 한다.
+
+#### JPA 등록 배치
+배치를 돌릴 때는 일정 단위마다 영속성 컨텍스트의 엔티티를 데이터베이스에 플러시하고 영속성 컨텍스트를 초기화해야 한다.
+```java
+EntityManager em = entityManagerFactory.createEntityManager();
+EntityTrasaction tx = em.getTrasaction();
+tx.begin();
+
+for (int i = 0; i < 100000; i++) {
+    Product product = new Product("item" + i, 10000);
+    em.persist(product);
+
+    if (i % 100 == 0) { //  100건마다 flush와 영속성 컨텍스트 초기화
+        em.flush();
+        em.clear();
+    }
+}
+
+tx.commit();
+em.close();
+```
+
+추가로 수정 배치 처리할 때는 아래 2가지 방법을 주로 사용한다.
+* 페이징 처리 : 데이터베이스 페이징 기능을 사용
+* 커서(CURSOR) : 데이터베이스가 지원하는 커서 기능을 사용
+
+#### JPA 페이징 배치 처리
+.setFirstResult(), .setMaxResults(pageSize), .getResultList() 를 활용하여 100건 씩 페이징 쿼리로 조회하면서 영속성 컨텍스트를 flush하고 초기화한다.<br>
+JPA는 JDBC 커서를 지원하지 않는다. 대신 하이버네이트 세션을 사용해야 한다.
+
+#### 하이버네이크 scroll 사용
+하이버네이트는 scroll이라는 이름으로 JDBC 커서를 지원한다.
+```java
+EntityTransaction tx = em.getTransaction();
+Session session = em.unwrap(Session.class); //  하이버네이트 세션을 구함
+
+tx.begin();
+ScrollableResults scroll = session.createQuery("select p from Product p")
+                                  .setCacheMode(CacheMode.IGNORE)   //  2차 캐시 기능을 끈다.
+                                  .scroll(ScrollMode.FORWARD_ONLY);
+
+int count = 0;
+
+while(scroll.next()) {
+    Product p = (Product) scroll.get(0);
+    p.setPrice(p.getPrice() + 100);
+    
+    count++;
+    if (count % 100 == 0) {
+        session.flush();    //  플러시
+        session.clear();    //  영속성 컨텍스트 초기화
+    }
+}
+```
+
+#### 하이버네이트 무상태 세션 사용
+영속성 컨텍스트를 만들지 않고 심지어 2차 캐시도 사용하지 않는 기능이다. 영속성 컨텍스트가 없기 때문에 엔티티를 수정하려면 무상태 세션이 제공하는 update() 메소드를 직접 호출해야 한다.
+```java
+SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+StatelessSession session = sessionFactory.openStatelessSession();
+Transaction tx = session.beginTransaction();
+ScrollableResults scroll = session.createQuery("select p from Product p").scroll();
+
+while(scroll.next()) {
+    Product p = (Product) scroll.get(0);
+    p.setPrice(p.getPrice() + 100);
+    session.update(p);   //  직접 update를 호출해야 한다.
+}
+
+tx.commit();
+session.close();
+```
+하이버네이트 무상태 세션은 영속성 컨텍스트가 없기 때문에 flush나 초기화하지 않아도 된다. 대신에 엔티티를 수정할 때 update() 메소드를 직접 호출해야 한다.
+
+### SQL 쿼리 힌트 사용
+JPA는 데이터베이스 SQL 힌트 기능을 제공하지 않기 때문에 하이버네이트를 직접 사용해야 힌트 기능을 사용할 수 있다.<br>
+SQL힌트는 하이버네이트 쿼리가 제공하는 addQueryHint() 메소드를 사용한다.
+
+### 트랜잭션을 지원하는 쓰기 지연과 성능 최적화
+#### 트랜잭션을 지원하는 쓰기 지연과 JDBC 배치
+JDBC가 제공하는 SQL 배치 기능을 사용하면 SQL을 모아서 데이터베이스에 한번에 보낼 수 있다.<br>
+하지만, 코드의 많은 부분을 수정해야 하고 특히 비즈니스 로직이 복잡하게 얽혀 있는 곳에서는 사용하기 쉽지 않다. 그래서 보통 수백, 수천 건 이상의 데이터를 변경하는 특수한 상황에 SQL 배치 기능을 사용한다.
+
+> 엔티티가 영속 상태가 되려면 식별자는 필수인데, IDENTITY 식별자 생성 전략은 엔티티를 데이터베이스에 저장해야 식별자를 구할 수 있으므로 em.persist()를 호출하는 즉시 INSERT SQL이 날아간다. 따라서 쓰기 지연을 활용한 성능 최적화를 할 수 없다.
+
+#### 트랜잭션을 지원하는 쓰기 지연과 애플리케이션 확장성
+트랜잭션을 지원하는 쓰기 지연과 변경 감지 기능 덕분에 성능과 개발의 편의성이 높아졌다. 하지만 진짜 장점은 `데이터베이스 테이블 row에 lock이 걸리는 시간을 최소화`한다는 점이다.<br>
+트랜잭션을 커밋해서 영속성 컨텍스트를 flush하기 전까지는 데이터베이스에 데이터를 등록, 수정, 삭제하지 않는다. 따라서 커밋 직전까지 데이터베이스 로우에 락을 걸지 않는다.<br>
+```java
+update(memberA);    //  UPDATE SQL A
+비즈니스로직A();        //  UPDATE SQL ...
+비즈니스로직B();        //  UPDATE SQL ...
+commit();  
+```
+JPA를 사용하지 않고 SQL을 직접 다루면 update(memberA)를 호출할 때 UPDATE SQL을 실행하면서 데이터베이스 테이블 로우에 락을 건다. 이 락은 비즈니스로직을 모두 수행하고 commit()을 호출할 떄까지 유지된다.<br>
+따라서 JPA를 사용하게 되면 데이터베이스에 락이 걸리는 시간이 최소화된다.
+
+> JPA의 쓰기 지연 기능은 데이터베이스에 락이 걸리는 시간을 최소화해서 동시에 더 많은 트랜잭션을 처리할 수 있다.
+
+## 정리
+* 트랜잭션을 롤백하는 옝외는 심각한 예외이므로 트랜잭션을 강제로 커밋해도 커밋되지 않고 롤백된다.
+* 같은 영속성 컨텍스트의 엔티티를 비교할 때는 동일성 비교가 가능하지만 영속성 컨텍스트가 다르면 동일성 비교가 불가하다. 따라서 자주 변하지 않는 비즈니스 키를 통해 동등성 비교를 해야 한다.
+* N+1은 페치 조인을 통해 해결할 수 있다.
+* 엔티티를 읽기 전용으로 조회하면 메모리 성능을 최적화 할 수 있다.
