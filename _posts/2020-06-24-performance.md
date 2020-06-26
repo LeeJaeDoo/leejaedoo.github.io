@@ -525,3 +525,27 @@ firstMember = member.get(0);
 firstMember.getOrder().size();  //  지연 로딩 초기화
 ```
 
+members.get(0)로 회원 하나만 조회해서 사용했기 때문에 firstMember.getOrder().size()를 호출하면서 실행되는 SQL은 다음과 같다.
+
+```java
+for (Member member : members) {
+    //  지연 로딩 초기화
+    System.out.println(member.getOrders().size());
+}
+```
+
+주문 컬렉션을 초기화하는 수만큼 다음 SQL이 실행될 수 있다. 회원이 5명이면 회원에 따른 주문도 5번 조회된다.
+
+#### 페치 조인 사용
+페치 조인은 SQL 조인을 사용해서 연관된 엔티티를 함께 조회하므로 N+1 문제가 발생하지 않는다.
+```sql
+select m from Member m join fetch m.orders  //  JPQL
+
+SELECT M.*, O.* FROM MEMBER M
+INNER JOIN ORDERS O ON M.ID=O.MEMBER_ID     // 실행된 SQL
+```
+
+이 예제는 참고로 일대다 조인을 했기 때문에 결과가 늘어나서 중복된 결과가 나타날 수 있다. 따라서 JPQL의 DISTINCT를 사용해서 중복을 제거하는 것 이좋다.
+#### 하이버네이트 @BatchSize
+@BatchSize 어노테이션을 사용해서 연관된 엔티티를 조회할 때 지정한 size 만큼 SQL의 IN 절을 사용해서 조회한다. 조회한 회원이 10명인데 size=5로 지정하면 2번의 SQL만 추가로 실행한다.k
+#### 하이버네이트 @Fetch(FetchMode.SUBSELECT)
