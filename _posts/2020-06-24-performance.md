@@ -271,7 +271,7 @@ Item proxyItem = em.getReference(Item.class, saveBook.getId());
 ```
 em.getReference() 메소드를 사용해서 Item 엔티티를 프록시로 조회하면 실제 조회된 엔티티는 Book 이기 때문에 Book 타입을 기반으로 원본 엔티티 인스턴스가 생성된다.<br>
 그런데 em.getReference() 메소드에서 Item 엔티티를 대상으로 조회했으므로 프록시인 proxyItem은 Item 타입을 기반으로 만들어진다. 따라서 proxyItem 프록시 클래스는 원본 엔티티로 Book 엔티티를 참조한다.<br>
-따라서 `proxyItem instanceof Book` 연산은 `false`를 반환한다. 왜냐하면 프록시인 proxyItem은 Item$Proxy 타입이고 이 타입은 Book 타입과 관계가 없기 때문이다.<br>
+따라서 `proxyItem instanceof Book` 연산은 `false`를 반환한다. 왜냐하면 `프록시인 proxyItem은 Item$Proxy 타입이고 이 타입은 Book 타입과 관계가 없기 때문`이다.<br>
 따라서 직접 다운캐스팅을 해도 문제가 발생한다.
 ```java
 Book book = (Book) proxyItem;   //  java.lang.ClassCastException
@@ -391,5 +391,137 @@ public class Movie extends Item {
 ```
 TitleView라는 공통 인터페이스를 만들고 자식 클래스들은 인터페이스의 getTitle() 메소드를 각각 구현한다.
 
+```java
+@Entity
+public class OrderItem {
+    
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ITEM_ID")
+    private Item item;
+
+    ...
+}
+
+OrderItem item = em.find(OrderItem.class, saveOrderItem.getId());
+orderItem.printItem();
+
+//  결과 : TITLE:[제목:jpabook 저자:kim]
+```
+이처럼 인터페이스를 제공하고 각각의 클래스가 자신에 맞는 기능을 구현하는 것은 다형성을 활용하는 좋은 방법이다.<br>
+이 방법을 사용할 때는 프록시의 특징 때문에 프록시의 대상이 되는 타입에 인터페이스를 적용해야 한다.
 
 #### 비지터 패턴 사용
+![상속관계와 프록시4](../assets/img/visitor.jpg)
+비지터 패턴은 Visitor와 Visitor를 받아들이는 대상 클래스로 구성된다. Item은 accept(visitor) 메소드를 사용해서 Visitor를 받아들인다. 다만 단순히 Visitor를 받아들이기만 할 뿐, 실제 로직은 Visitor가 처리한다.
+
+* 장점
+    * 프록시에 대한 걱정 없이 안전하게 원본 엔티티에 접근 가능
+    * instanceof와 타입 캐스팅 없이 코드를 구현 가능
+    * 알고리즘과 객체 구조를 분리해서 구조를 수정하지 않고 새로운 동작 추가가 가능
+
+* 단점
+    * 너무 복잡하고 더블 디스패치를 사용하기 때문에 이해하기 어렵다.
+    * 객체 구조가 변경되면 모든 Visitor를 수정해야 한다.
+    
+## 성능 최적화
+### N + 1 문제
+```java
+@Entity
+public class Member {
+    
+    @Id @GeneratedValue
+    private Long id;
+
+    @OneToMany(mappedBy = "member", fetch = FetcyType.EAGER)
+    private List<Order> orders = new ArrayList<Order>();
+    ...
+}
+
+@Entity
+@Table(name = "ORDERS")
+public class Order {
+    
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne
+    private Member member;
+    ...
+}
+```
+
+#### 즉시 로딩과 N+1
+특정 회원 하나를 em.find() 메소드로 조회하면 즉시 로딩으로 설정한 주문정보도 함께 조회한다.
+```java
+em.find(Member.class, id);
+```
+
+* 실행된 SQL
+
+```sql
+SELECT M.*, O.*
+FROM
+    MEMBER M
+OUTER JOIN ORDERS O ON M.ID=O.MEMBER_ID
+```
+SQL을 두 번 실행하는 것이 아닌, 조인을 사용해서 한 번의 SQL로 회원과 주문정보를 함께 조회한다.<br>
+문제는 JPQL을 사용할 때다.
+
+```java
+List<Member> members = em.createQuery("select m from Member m", Member.class).getResultList();
+```
+
+JPQL을 실행하면 JPA는 즉시/지연 로딩을 신경쓰지 않고 JPQL만 사용하여 SQL을 생성한다. 따라서 아래 SQL이 먼저 실행된다.
+
+```sql
+SELECT * FROM MEMBER
+```
+먼저 회원 엔티티를 로딩하지만 회원과 주문 컬렉션이 즉시 로딩 관계이므로 JPA는 주문 컬렉션을 즉시 로딩하기 위해 아래 SQL을 추가로 실행한다.
+
+```sql
+SELECT * FROM ORDERS WHERE MEMBER_ID=?
+```
+
+조회된 회원이 하나면 이렇게 총 2번의 SQL을 실행하지만 조회된 회원이 5명이면..
+
+```sql
+SELECT * FROM MEMBER    //  1번 실행으로 회원 5명 조회
+SELECT * FROM ORDERS WHERE MEMBER_ID=1 //   회원과 연관된 주문
+SELECT * FROM ORDERS WHERE MEMBER_ID=2 //   회원과 연관된 주문
+SELECT * FROM ORDERS WHERE MEMBER_ID=3 //   회원과 연관된 주문
+SELECT * FROM ORDERS WHERE MEMBER_ID=4 //   회원과 연관된 주문
+SELECT * FROM ORDERS WHERE MEMBER_ID=5 //   회원과 연관된 주문
+```
+처음 실행한 SQL의 결과 수 만큼 추가로 SQL을 실행하게 된다.
+
+> 즉시 로딩은 JPQL을 실행할 때 N + 1 문제가 발생할 수 있다.
+
+#### 지연 로딩과 N+1
+```java
+@Entity
+public class Member {
+    
+    @Id @GeneratedValue
+    private Long id;
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
+    private List<Order> ordres = new ArrayList<Order>();
+    ...
+}
+```
+
+지연 로딩으로 설정하면 JPQL에서는 N+1 문제가 발생하지 않는다. 지연 로딩이므로 데이터베이스에서 회원만 조회된다. 따라서 다음 SQL만 실행되고 연관된 주문 컬렉션은 지연 로딩 된다.
+
+```sql
+SELECT * FROM MEMBER
+```
+이후 비즈니스 로직에서 주문 컬렉션을 실제 사용할 때 지연 로딩이 발생한다.
+
+```java
+firstMember = member.get(0);
+firstMember.getOrder().size();  //  지연 로딩 초기화
+```
+
