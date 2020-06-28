@@ -190,6 +190,7 @@ em.lock(board, LockModeType.OPTIMISTIC);
 
 * JPA가 제공하는 LockModeType옵션
 
+
 <table>
   <thead>
     <tr>
@@ -238,7 +239,7 @@ em.lock(board, LockModeType.OPTIMISTIC);
       <td>기타</td>
       <td>WRITE</td>
       <td>JPA 1.0 호환 기능이다. OPTIMISTIC_FORCE_INCREMENT와 같다.</td>
-    </tr>dd
+    </tr>
   </tbody>
 </table>
 
