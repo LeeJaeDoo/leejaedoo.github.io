@@ -488,6 +488,7 @@ Order.member가 지연 로딩으로 설정되어있지만, 엔티티 그래프�
 ### em.find()에서 엔티티 그래프 사용
 
 * 엔티티 그래프 사용 예제
+
 ```java
 EntityGraph graph = em.getEntityGraph("Order.withMember");
 
@@ -570,6 +571,7 @@ hints.put("javax.persistence,fetchgraph", em.getEntityGraph("Order.witAll"));
 
 Order order = em.find(Order.class, orderId, hints);
 ```
+
 * 실행된 sql
 
 ```sql
