@@ -68,7 +68,7 @@ List<String> threeHighCaloricDishNames = menu.stream()                          
 
 > 내부 반복은 `투명한 병렬 처리`와 `최적화된 다양한 순서`로 처리가 가능해진다. 또한 데이터 표현과 HW를 활용한 병렬성 구현을 `자동으로 선택`한다.
 
-![내부/외부 반복](../assets/img/in_external_iter.jpg)
+![내부/외부 반복](../../assets/img/in_external_iter.jpg)
 
 ## 스트림 연산
 스트림 연산은 다음과 같이 크게 두 가지로 구분할 수 있다. 연결할 수 있는 스트림 연산인 `중간 연산`과, 스트림을 닫는 연산인 `최종 연산`이다.

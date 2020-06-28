@@ -80,7 +80,7 @@ List<String> uniqueCharacters =
 ```
 
 flatMap은 각 배열을 스트림이 아니라 스트림의 컨텐츠로 매핑한다. 즉, map(Arrays::stream)과 달리 flatMap은 하나의 평면화된 스트림을 반환한다.
-![평면화](../assets/img/flatmap.jpg)
+![평면화](../../assets/img/flatmap.jpg)
 
 > flatMap()는 스트림의 각 값을 다른 스트림으로 만든 다음 모든 스트림을 하나의 스트림으로 연결하는 기능이다.
 
@@ -162,7 +162,7 @@ for (int x : numbers) {
 int sum = numbers.stream().reduce(0, (a, b) -> a + b);
 ```
 a는 초기값, (a, b) -> a + b는 두 요소를 조합해서 새로운 값을 만드는 BinaryOperator<T>를 사용했다.
-![reduce](../assets/img/reduce.jpg)
+![reduce](../../assets/img/reduce.jpg)
 정적 메서드 sum을 활용하면 더 간결하게 구현이 가능하다.
 ```java
 int sum = numbers.stream().reduce(0, Integer::sum);

@@ -39,7 +39,7 @@ comments: true
         }
     }
 ```
-![Apple Predicate](../assets/img/applePredicate.jpg)
+![Apple Predicate](../../assets/img/applePredicate.jpg)
 ApplePredicate는 사과 선택 전략을 캡슐화 하였다.
 여기서 ApplePrediate가 다양한 동작을 할 수 있도록 구현하려면 filterApples메소드를 생성하고 ApplePredicate 객체를 받아 apple의 조건을 검사하도록 메소드를 수정해야 한다. 이렇게 해야 filterApples 메소드가 다양한 동작(전략)을 받아 내부적으로 다양한 동작을 수행할 수 있게 된다.
 
