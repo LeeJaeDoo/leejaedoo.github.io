@@ -308,7 +308,9 @@ public interface AttributeConverter<X, Y> {
     public X convertToEntityAttribute(Y dbData);
 }
 ```
+
 * convertToDatabaseColumn : 엔티티의 데이터를 데이터베이스 컬럼에 저장할 데이터로 변환한다.
+
 * convertToEntityAttribute : 데이터베이스에서 조회한 컬럼 데이터를 엔티티의 데이터로 변환한다.
 
 * 컨버터 클래스 레벨에서 설정 
@@ -434,6 +436,7 @@ orm.xml에 등록한다.
 
 #### 더 세밀한 설정
 * javax.persistence.ExcludeDefaultListeners : 기본 리스너 무시
+
 * javax.persistence.ExcludeSuperclassListeners : 상위 클래스 이벤트 리스너 무시
 
 * 기타 어노테이션 적용 코드
@@ -483,6 +486,8 @@ Order.member가 지연 로딩으로 설정되어있지만, 엔티티 그래프�
 > 둘 이상 정의하려면 @NamedEntityGraphs를 사용하면 된다.
 
 ### em.find()에서 엔티티 그래프 사용
+
+* 엔티티 그래프 사용 예제
 ```java
 EntityGraph graph = em.getEntityGraph("Order.withMember");
 
@@ -491,6 +496,26 @@ hints.put("javax.persistence.fetchgraph", graph);
 
 Order order = em.find(Order.class, orderId, hints);
 ```
+
+* 실행된 SQL
+
+```sql
+select o.*, m.*
+from
+    ORDERS o
+inner join
+    Member m
+        on o.MEMBER_ID=m.MEMBER_ID
+where
+    o.ORDER_ID=?
+```
+
+N+1 문제의 해결책 중 하나가 될 수 있다.
+
+> join fetch vs entityGraph
+> 참조 : [https://jojoldu.tistory.com/165](https://jojoldu.tistory.com/165)
+
+> 참조 : [https://blog.leocat.kr/notes/2019/05/26/spring-data-using-entitygraph-to-customize-fetch-graph](https://blog.leocat.kr/notes/2019/05/26/spring-data-using-entitygraph-to-customize-fetch-graph)
 
 ### subgraph
 Order -> OrderItem -> Item 까지 Order가 관리하지 않는 Item 필드까지 조회하기 위해 사용한다.
@@ -605,7 +630,7 @@ Order order = em.find(Order.class, orderId, hints);
     * fetchgraph : 엔티티 그래프에 선택한 속성만 함께 조회한다.
     * loadgraph : 선택한 속성 뿐만 아니라 글로벌 fetch 모드가 FetchType.EAGER로 설정된 연관관계도 포함해서 조회한다.
     
-    ## 정리
-    * 컨버터를 활용함으로써 엔티티의 데이터를 변환하여 바로 데이터베이스에 저장할 수 있다.
-    * 리스너를 활용함으로써 엔티티에서 발생한 이벤트를 받아 처리할 수 있다.
-    * 페치 조인은 JPQL을 사용해야 하지만 엔티티 그래프를 활용함으로써 JPQL 대신 원하는 객체 그래프를 한 번에 조회할 수 있다.
+## 정리
+* 컨버터를 활용함으로써 엔티티의 데이터를 변환하여 바로 데이터베이스에 저장할 수 있다.
+* 리스너를 활용함으로써 엔티티에서 발생한 이벤트를 받아 처리할 수 있다.
+* 페치 조인은 JPQL을 사용해야 하지만 엔티티 그래프를 활용함으로써 JPQL 대신 원하는 객체 그래프를 한 번에 조회할 수 있다.
