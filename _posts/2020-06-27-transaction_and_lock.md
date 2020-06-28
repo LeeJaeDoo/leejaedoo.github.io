@@ -313,7 +313,9 @@ JPA가 제공하는 비관적 락은 데이터베이스 트랜잭션 락 메커�
 ### JPA 2차 캐시 기능
 #### 캐시 모드 설정
 @Cacheable 어노테이션을 사용하면 된다. 캐시 모드는 javax.persistence.ShareCacheMode에 정의되어 있다. 보통 `ENABLE_SELECTIVE`를 사용한다.
+
 * SharedCacheMode 캐시 모드 설정
+
 <table>
   <thead>
     <tr>
