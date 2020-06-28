@@ -395,3 +395,57 @@ stream.map(String::toUpperCase).forEach(System.out::println);
 ```java
 Stream<String> emptyStream = Stream.empty();
 ```
+
+### 배열로 스트림 만들기
+배열을 인수로 받는 정적 메서드 Arrays.stream()을 이용해서 스트림을 만들 수 있다.<br>
+```java
+int[] numbers = {2, 3, 5, 7, 11, 13};
+int sum = Arrays.stream(number).sum();  //  41
+```
+
+### 파일로 스트림 만들기
+I/O 연산에 사용하는 자바의 NIO API(비블록 I/O)도 스트림 API를 활용할 수 있도록 업데이트 되었다. 예를 들어 Files.lines는 주어진 파일의 행 스트림을 문자열로 반환한다. 
+```java
+long uniqueWords = 0;
+try (Stream<String> lines = Files.lines(Paths.get("data.txt"), Charset.defaultCharset())) { //  스트림은 자원을 자동으로 해제할 수 있는 AutoClosable이다.
+    uniqueWords = lines.flatMap(line -> Arrays.stream(line.split(" "))) //  단어 스트림 생성
+                       .distinct()  //  중복 제거
+                       .count();    //  고유 단어 수 계산  
+} catch (IOException e) {
+        //  파일을 일다가 예외가 발생하면 처리
+}
+```
+
+Files.lines : 파일의 각 행 요소를 반환하는 스트림을 얻는다.
+flatMap : 각 행의 단어를 여러 스트림으로 만드는 것이 아니라 flatMap으로 스트림을 하나로 평면화했다.
+distinct, count : 스트림의 고유 단어 수를 계산한다.
+### 함수로 무한 스트림 만들기
+Stream.iterate와 Stream.generate 두 개의 정적 메소드를 통해 무한 스트림, 즉 기존과 같이 고정된 컬렉션에서 고정된 스트림을 만드는 것이 아닌 크기가 고정되지 않은 스트림을 만들 수 있다.<br>
+iterate와 generate에서 만든 스트림은 요청할 때마다 주어진 함수를 이용해서 값을 만든다. 따라서 무제한으로 값을 계산할 수 있다. 하지만 보통 limit(n)함수를 함께 사용하여 무한한 값을 출력하지 않도록 처리한다.  
+#### iterate
+```java
+Stream.iterate(0, n -> n + 2)       //  초기값 0(UnaryOperator<T> 사용), n -> n+2로 2 더한 값 반
+      .limit(10)
+      .forEach(System.out::println);
+```
+결과적으로 iterate 메서드는 짝수 스트림을 생성한다. iterate는 요청할 때마다 값을 생산할 수 있으며 끝이 없으므로 무한 스트림을 만든다. 이러한 스트림을 `언바운드 스트림`이라고 표현한다.<br>
+일반적으로 연속된 일련의 값을 만들 때 iterate를 사용한다.
+#### generate
+iterate와 마찬가지로 generate도 값을 계산하는 무한 스트림을 만들 수 있다. 하지만 차이가 있다면 생산된 각 값을 연속적으로 계산하지는 않는다.
+```java
+Stream.generate(Math::random)       //  Supplier<T>를 인수로 받아 임의의 새로운 값을 생산.
+      .limit(5)
+      .forEach(System.out::println);
+```
+IntStream을 이용하면 박싱 연산 문제를 피할 수 있다. IntStream의 generate 메서드는 Supplier<T> 대신에 IntSupplier를 인수로 받는다.<br>
+
+무한한 크기를 가진 스트림이 처리될 때는 limit을 이용해서 명시적으로 스트림의 크기를 제한해야 한다. 그렇지 않으면 최종 연산을 수행했을 때 아무 결과도 계산되지 않는다.<br>
+마찬가지로 무한 스트림의 요소는 무한적으로 계산이 반복되므로 정렬하거나 리듀스 할 수 없다.
+## 요약
+* filter, distinct, skip, limit 메서드로 스트림을 필터링하거나 자를 수 있다.
+* map, flatMap으로 스트림의 요소를 추출하거나 변환할 수 있다.
+* findFirst, findAny 메서드로 스트림의 요소를 검색할 수 있다. allMatch, noneMath, anyMatch 메서드로 주어진 predicate와 일치하는 요소를 검색할 수 있다.
+* 이들 메서드는 쇼트 서킷이 적용된다.
+* reduce 메서드로 스트림의 모든 요소를 반복 조합하며 값을 도출할 수 있다.
+* filter, map 등은 상태를 저장하지 않는 상태 없는 연산이다. reduce 같은 연산은 값을 계산하는 데 필요한 상태를 저장한다. sorted, distinct 등의 메서드는 새로운 스트림을 반환하기에 앞서 스트림의 요소를 버퍼에 저장해야 한다. 이런 메서드를 상태 있는 연산이라고 부른다.
+* IntStream, DoubleStream, LongStream은 기본형 특화 스트림이다.
