@@ -358,7 +358,7 @@ public class BooleanToYNConverter implements AttributeConverter<Boolean, String>
 
 ## 리스너
 JPA 리스너 기능을 활용하면 엔티티의 생명주기에 따른 이벤트(ex. 삭제 로그 등)를 처리할 수 있다.
-![리스너](../assets/img/listener.jpeg)
+![리스너](../../assets/img/listener.jpeg)
 
 1. PostLoad : 엔티티가 영속성 컨텍스트에 조회된 직후 또는 refresh를 호출한 후(2차 캐시에 저장되어 있어도 호출)
 2. PrePersist : persist() 메소드를 호출해서 엔티티를 영속성 컨텍스트에 관리하기 직전에 호출. 식별자 생성 전략을 사용한 경우, 엔티티에 식별자는 아직 존재하지 않는다. 새로운 인스턴스를 merge할 때도 수행된다.

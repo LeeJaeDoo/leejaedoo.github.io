@@ -483,7 +483,7 @@ INNER JOIN TEAM T ON M.TEAM_ID=T.ID
 
 > 페치 조인에서는 별칭을 사용할 수 없다.(하이버네이트는 허용)
 
-![fetch조인](../assets/img/fetch_join.jpg)
+![fetch조인](../../assets/img/fetch_join.jpg)
 
 select m으로 회원엔티티만 선택했지만 SQL은 회원과 연관된 팀도 함께 조회된다.<br>
 ```java
@@ -520,7 +520,7 @@ FROM TEAM t
 INNER JOIN MEMBER M ON T.ID=M=TEAM_ID
 WHERE T.NAME = '팀A'
 ```
-![fetch조인](../assets/img/collection_fetch.jpg)
+![fetch조인](../../assets/img/collection_fetch.jpg)
 
 팀 테이블의 `팀A`는 하나지만, MEMBER 테이블과 조인하면서 결과가 증가하여 `회원1`과 `회원2`를 갖는 `팀A`가 2건 조회되게 된다.
 > 일대다 조인은 결과가 증가할 수 있지만, 일대일/다대일 조인은 결과가 증가하지 않는다.
@@ -561,7 +561,7 @@ where t.name = '팀A'
 
 그 후, 애플리케이션에서 distinct 명령어가 적용되는데 `select distinct t`의 의미는 `팀 엔티티의 중복을 제거`하라는 것이다. 따라서 중복인 팀A는 아래 처럼 하나만 조회되게 된다.
 
-![fetch조인](../assets/img/fetch_join_distinct.jpg)
+![fetch조인](../../assets/img/fetch_join_distinct.jpg)
 
 * 페치 조인 vs 일반 조인
 

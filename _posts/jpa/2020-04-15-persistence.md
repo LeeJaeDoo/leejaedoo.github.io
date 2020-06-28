@@ -34,7 +34,7 @@ JPA 기능은 `엔티티와 테이블을 매핑 하는 설계 부분`과 `매핑
 ##### 엔티티 매니저
 생성하는데 비용이 거의 없지만, 여러 thread가 동시에 접근하면 동시성 문제가 발생하므로 thread간에 공유해선 안된다.
 
-![EntityManager](../assets/img/entitymanager.jpg)
+![EntityManager](../../assets/img/entitymanager.jpg)
 EntityManagerFactory에서 다수의 엔티티 매니저를 생성한다. 
 EntityManager들은 데이터베이스 연결이 꼭 필요한 시점까지 db 커넥션을 얻지 않는다.(ex. 트랜잭션을 시작할 때 커넥션을 획득.)
 JPA 구현체들은 EntityManagerFactory를 생성할 때 커넥션풀도 생성하게 된다.
@@ -49,10 +49,10 @@ JPA 구현체들은 EntityManagerFactory를 생성할 때 커넥션풀도 생성
 엔티티 매니저를 통해 영속서 컨텍스트에 접근/관리가 가능하다.
 
 ## 엔티티 생명주기
-![LifeCycle](../assets/img/entity_lifecycle.jpg)
+![LifeCycle](../../assets/img/entity_lifecycle.jpg)
 ### 비영속(new/trasient)
 #### 영속성 컨텍스트와 전혀 관계가 없는 상태
-![Transient](../assets/img/transient.jpg)
+![Transient](../../assets/img/transient.jpg)
 ```java
     // 객체를 생성한 상태(비영속)
     Member member = new Member();
@@ -61,7 +61,7 @@ JPA 구현체들은 EntityManagerFactory를 생성할 때 커넥션풀도 생성
 ```
 ### 영속(managed)
 #### 영속성 컨텍스트에 저장된 상태
-![Managed](../assets/img/managed.jpg)
+![Managed](../../assets/img/managed.jpg)
 ```java
     em.persist(member);
 ```
@@ -119,7 +119,7 @@ JPA 구현체들은 EntityManagerFactory를 생성할 때 커넥션풀도 생성
 em.find()를 호출하면 1차 캐시에서 먼저 엔티티를 찾고 없으면 데이터베이스에 조회한다.
 
 ##### 1차 캐시에서 조회
-![1차캐시](../assets/img/1stcache.jpg)
+![1차캐시](../../assets/img/1stcache.jpg)
 ```java
     Member memer = new Member();
     member.setId("member1");
@@ -134,7 +134,7 @@ em.find()를 호출하면 1차 캐시에서 먼저 엔티티를 찾고 없으면
 먼저 1차 캐시에 저장 후 member 엔티티를 조회하기 때문에 데이터베이스 조회 없이 1차 캐시에서 member 엔티티가 조회된다.
 
 ##### 데이터베이스에서 조회
-![데이터베이스조회](../assets/img/db.jpg)
+![데이터베이스조회](../../assets/img/db.jpg)
 ```java
     Member member2 = em.find(Member.class, "member2");
 ```
@@ -165,10 +165,10 @@ member2는 1차 캐시에 저장 처리 없이 조회를 호출했기 때문에 
 
     transaction.commit();   // [트랜잭션] 커밋
 ```
-![엔티티등록](../assets/img/entity_register.jpg)
+![엔티티등록](../../assets/img/entity_register.jpg)
 엔티티 매니저는 트랜잭션을 커밋하기 직전 까지 내부 쿼리 저장소에 INSERT SQL을 저장해 두었다가 트랜잭션이 커밋될 때 모아둔 쿼리를 데이터베이스로 보낸다. 이를 `쓰기 지연(Transactional write-behind)`라고 한다.
 영속성 컨텍스트는 1차 캐시에 member 엔티티를 저장하면서 동시에 member 엔티티 정보로 등록 쿼리를 만들어 쓰기 지연 SQL 저장소에 보관한다.
-![엔티티등록1](../assets/img/entity_register1.jpg)
+![엔티티등록1](../../assets/img/entity_register1.jpg)
 마지막으로 트랜잭션이 커밋되면 엔티티 메니저는 영속성 컨텍스트를 flush함으로써 영속성 컨텍스트의 변경 내용, 즉 쓰기 지연 SQL 저장소에 모인 쿼리를 데이터베이스에 보냄으로써 변경 내용을 데이터베이스에 동기화하게 된다. 동기화한 후에 실제 데이터베이스에 커밋 처리 하게 된다.
 
 #### 엔티티 수정
@@ -194,7 +194,7 @@ member2는 1차 캐시에 저장 처리 없이 조회를 호출했기 때문에 
 JPA로 엔티티를 수정할 때는 단순히 엔티티를 조회해 데이터만 변경하면 된다. 이 때 변경 감지 기술이 적용된다.
 > 변경 감지(Dirty Checking)란 엔티티의 변경 사항을 데이터베이스에 자동으로 반영해주는 기능을 말한다.
 
-![엔티티수정](../assets/img/entity_modify.jpg)
+![엔티티수정](../../assets/img/entity_modify.jpg)
 JPA는 엔티티를 영속성 컨텍스트에 보관할 때, 최초 상태를 복사해서 저장해두는데 이를 `스냅샷`이라 한다. 그리고 flush 시점에 스냅샷과 엔티티를 비교하여 변경된 엔티티를 찾게 된다.
 변경된 엔티티가 있으면 엔티티 등록 과정과 마찬가지로 수정 쿼리를 생성하여 쓰기 지연 SQL 저장소에 보낸다.
 > 변경 감지는 영속성 컨텍스트가 관리하는 영속 상태의 엔티티에만 적용된다.
@@ -267,7 +267,7 @@ em.flush()를 호출하여 영속성 컨텍스트를 강제로 플러시 한다.
     // 트랜잭션 커밋
     transaction.commit();
 ```
-![준영속](../assets/img/detach.jpg)
+![준영속](../../assets/img/detach.jpg)
 detach()가 호출되는 순간 1차 캐시부터 쓰기 지연 SQL 저장소까지 해당 엔티티를 관리하기 위한 모든 정보는 삭제된다. 따라서 커밋이 호출되어도 쓰기 지연 SQL 저장소에 있던 쿼리도 삭제되었기 때문에 데이터베이스에 저장되지 않는다.
 #### em.clear(entity); -> 영속성 컨텍스트 초기화
 ```java
@@ -279,7 +279,7 @@ detach()가 호출되는 순간 1차 캐시부터 쓰기 지연 SQL 저장소까
     // 준영속 상태
     member.setUsername("changeName");
 ```
-![준영속_초기화](../assets/img/clear.jpg)
+![준영속_초기화](../../assets/img/clear.jpg)
 clear()가 호출되면 영속성 컨텍스트에 있는 모든 것이 초기화된다.
 #### em.close(entity); -> 영속성 컨텍스트 종료
 ```java
@@ -310,7 +310,7 @@ clear()가 호출되면 영속성 컨텍스트에 있는 모든 것이 초기화
 ### 병합: merge()
 준영속 상태의 엔티티를 다시 영속 상태로 변경시켜 준다.
 merge() 메소드는 `준영속 상태의 엔티티를 받아 새로운 영속 상태의 엔티티를 반환`시키게 된다.
-![병합](../assets/img/merge.JPG)
+![병합](../../assets/img/merge.JPG)
 1. member 엔티티를 준영속에서 영속 상태로 전환한다.
 2. 준영속 엔티티의 식별자 값으로 1차 캐시에서 엔티티를 조회한다. 만약 1차 캐시에 엔티티가 없으면 데이터베이스에서 엔티티를 조회하여 1차 캐시에 저장한다.
 3. 조회해온 영속 엔티티에 준영속 상태였던 member 엔티티 값을 채워 넣는다.

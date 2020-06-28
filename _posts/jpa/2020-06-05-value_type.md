@@ -327,7 +327,7 @@ public class Address {
 Member 엔티티에서 값 타입 컬렉션으로 favoriteFoods, addressHistory에 @ElementCollection을 지정했다.<br>
 favoriteFoods는 기본 값 타입인 String을 컬렉션으로 갖게 되는데, 관계형 데이터베이스의 테이블은 컬럼안에 컬렉션을 포함할 수 없기 떄문에 `별도의 테이블로써 추가하고 @CollectionTable을 사용하여 추가한 테이블을 매핑`해야 한다.<br>
 그리고 favoriteFoods처럼 값으로 사용되는 컬럼이 하나면 @Column을 사용하여 컬럼명을 지정할 수 있다.
-![값타입](../assets/img/value_type.jpg)
+![값타입](../../assets/img/value_type.jpg)
 
 addressHistory는 임베디드 타입인 Address를 컬렉션으로 가지는데, 이 것도 별도의 테이블을 사용해야 하며 테이블 매핑정본는 @AttributeOverride로 재정의가 가능하다.
 

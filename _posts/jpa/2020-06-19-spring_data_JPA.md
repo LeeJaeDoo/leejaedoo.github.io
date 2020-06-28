@@ -32,12 +32,12 @@ public interface MemberRepository extends JpaRepository<Member, Long>{
 }
 ```
 
-![jpaRepository](../assets/img/jparepository.jpg)
+![jpaRepository](../../assets/img/jparepository.jpg)
 
 직접 작성한 메소드는 스프링 데이터 JPA가 메소드이름을 분석하여 `JPQL`을 실행한다.
 
 ### 스프링 데이터 프로젝트
-![jpaRepository](../assets/img/springdataproject.jpg)
+![jpaRepository](../../assets/img/springdataproject.jpg)
 스프링 데이터는 위와 같은 다양한 데이터 저장소에 대한 접근을 추상화해서 개발자 편의를 제공하고 반복적인 접근 코드를 줄여준다.
 
 ## 스프링 데이터 JPA 설정
@@ -69,7 +69,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 ```
 
 ### JpaRepository 인터페이스 계층 구조
-![jpaRepository](../assets/img/jpa_hierachy.jpg)
+![jpaRepository](../../assets/img/jpa_hierachy.jpg)
 Repository, CrudRepository, PagingAndSortingRepository는 스프링 데이터 프로젝트가 공통으로 사용하는 인터페이스이다.<br>
 JpaRepository는 여기에 추가로 JPA에 특화된 기능을 제공한다.
 

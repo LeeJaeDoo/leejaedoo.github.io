@@ -23,7 +23,7 @@ ORM에서 이야기하는 상속 관계 매핑은 객체의 상속 구조와 데
 
 ### 조인 전략(Joined Strategy)
 엔티티를 각각 모두 테이블로 만들고 자식 테이블이 부모 테이블의 기본 키를 받아서 기본 키 + 외래 키로 사용하는 전략이다.
-![조인테이블전략](../assets/img/jointable.jpg)
+![조인테이블전략](../../assets/img/jointable.jpg)
 ```java
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -114,7 +114,7 @@ JPA 표준 명세는 구분 컬럼을 사용하도록 하지만 하이버네이�
 ### 단일 테이블 전략
 테이블을 하나만 사용하고 구분 컬럼(DTYPE)으로 어떤 자식 데이터가 저장되었는지 구분한다. 조회할 때 조인을 사용하지 않으므로 일반적으로 가장 빠르다.<br>
 주의할 점은 `자식 엔티티가 매핑할 컬럼은 모두 null을 허용해야 한다.` 예를 들어 Book 엔티티를 저장하면 ITEM 테이블의 AUTHOR, ISBN 컬럼만 사용하고 다른 엔티티와 매핑된 ARTIST, DIRECTOR, ACTOR 컬럼은 사용하지 않으므로 null이 입력되기 떄문이다. 
-![싱글테이블전략](../assets/img/singletable.jpg)
+![싱글테이블전략](../../assets/img/singletable.jpg)
 ```java
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)   //  default가 SINGLE_TABLE이므로 strategy 생략 가능
@@ -195,7 +195,7 @@ public class Book extends Item {...}
 ## @MappedSuperclass
 `@MappedSuperclass`는 부모 클래스와 자식 클래스 모두 데이터베이스 테이블과 매핑하는 것이 아닌 `부모 클래스는 테이블과 매핑하지 않고 부모 클래스를 상속 받는 자식 클래스에게 매핑 정보만 제공할 때` 사용 된다.<br>
 추상 클래스와 비슷한 개념으로, @Entity와 달리 실제 테이블과 매핑되지 않는다. 단순히 매핑 정보를 상속할 목적으로만 사용된다.
-![mappedsuperclass](../assets/img/mappedsuperclass.jpg)
+![mappedsuperclass](../../assets/img/mappedsuperclass.jpg)
 id, name 두 공통 속성을 부모 클래스로 모으고 객체 상속 관계로 만든다.
 ```java
 @MappedSuperclass
@@ -252,11 +252,11 @@ public class Member extends BaseEntity { ... }
 데이터베이스 테이블 사이에 관계는 외래 키가 기본 키에 포함되는지 여부에 따라 식별 관계와 비식별 관계로 구분한다.
 #### 식별 관계
 부모 테이블의 기본 키를 내려받아서 `자식 테이블의 기본 키 + 외래 키`로 사용하는 관계다.
-![식별관계](../assets/img/identifying_relationship.jpg)
+![식별관계](../../assets/img/identifying_relationship.jpg)
 
 #### 비식별 관계
 부모 테이블의 기본 키를 받아서 `자식 테이블의 외래 키`로만 사용하는 관계다.
-![비식별관계](../assets/img/non_identifying_relationship.jpg)
+![비식별관계](../../assets/img/non_identifying_relationship.jpg)
 비식별 관계는 외래 키에 NULL을 허용하는지에 따라 필수적/선택적 비식별 관계로 나뉜다.
 * 필수적 비식별 관계(Mandatory)<br>
 외래 키에 NULL을 허용하지 않는다. 연관관계를 필수적으로 맺어야 한다.
@@ -270,7 +270,7 @@ JPA는 복합 키를 지원하기 위해 `@IdClass`와 `@EmbeddedId` 2가지 방
 
 #### @IdClass
 `관계형 데이터베이스에 더 가까운 방법`으로 아래와 같이 사용된다.
-![복합키테이블](../assets/img/복합키.JPG)
+![복합키테이블](../../assets/img/복합키.JPG)
 ```java
 @Entity
 @IdClass(ParentId.class)
@@ -413,7 +413,7 @@ em.createQuery("select p.id1, p.id2 from Parent p");        //  @IdClass
 > 복합 키에는 @GenerateValue를 사용할 수 없다. 복합 키를 구성하는 여러 컬럼 중 하나에도 사용할 수 없다.
 
 ### 복합 키를 활용한 식별 관계 매핑
-![식별관계](../assets/img/식별관계.jpg)
+![식별관계](../../assets/img/식별관계.jpg)
 부모, 자식, 손자까지 계속 기본 키를 전달하는 식별 관계다. 식별 관계에서 자식 테이블은 부모 테이블의 기본 키를 포함해서 복합 키를 구성해야 하므로 @IdClass나 @EmbeddedId를 사용해서 식별자를 매핑해야 한다.
 
 #### @IdClass를 활용한 식별 관계
@@ -564,7 +564,7 @@ public class GrandChildPK implements Serializable {
 @IdClass와 달리 @Id가 아닌 @MapsId로 외래 키와 기본 키를 매핑하였다. @MapsId의 속성 값은 @EmbeddedId를 사용한 식별자 클래스의 기본 키 필드를 지정한다.
 
 ### 비식별 관계로 구현
-![비식별관계](../assets/img/비식별관계.JPG)
+![비식별관계](../../assets/img/비식별관계.JPG)
 ```java
 //  부모
 @Entity
@@ -616,7 +616,7 @@ public class GrandChild {
 식별 관계와 비교하면 복합 키가 없으므로 복합 키 클래스를 생성하지 않아도 돼서 매핑도 쉽고 코드도 단순하다.
 
 ### 일대일 식별 관계
-![일대일식별관계](../assets/img/일대일식별.JPG)
+![일대일식별관계](../../assets/img/일대일식별.JPG)
 ```java
 //  부모
 @Entity
@@ -684,7 +684,7 @@ BoardDetail처럼 식별자가 단순히 컬럼 하나면 @MapsId를 사용하�
 
 ### 일대일 조인 테이블
 일대일 관계를 만드려면 조인 테이블의 외래 키 컬럼 각각에 총 2개의 유니크 제약조건을 걸어야 한다.
-![일대일조인테이블](../assets/img/일대일조인테이블.jpg)
+![일대일조인테이블](../../assets/img/일대일조인테이블.jpg)
 ```java
 //  부모
 @Entity
@@ -755,7 +755,7 @@ public class Child {
 
 ### 일대다 조인 테이블
 일대다 관계를 만드려면 조인 테이블의 컬럼 중 다(N)와 관련된 컬럼인 CHILD_ID에 유니크 제약조건을 걸어야 한다.
-![일대다조인테이블](../assets/img/일대다조인테이블.jpg)
+![일대다조인테이블](../../assets/img/일대다조인테이블.jpg)
 일대다 단방향 매핑 예시 코드이다.
 ```java
 //  부모

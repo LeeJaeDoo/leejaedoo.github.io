@@ -265,7 +265,7 @@ if (name != null ? !name.equals(member.getName()) : member.getName() != null)
 
 ### 상속관계와 프록시
 프록시를 부모 타입으로 조회하면 문제가 발생한다.<br>
-![상속관계와 프록시2](../assets/img/proxy2.jpeg)
+![상속관계와 프록시2](../../assets/img/proxy2.jpeg)
 ```java
 Item proxyItem = em.getReference(Item.class, saveBook.getId());
 ```
@@ -339,7 +339,7 @@ public static <T> T unProxy(Object entity) {
 > 하지만, 원본 엔티티의 값을 직접 변경해도 변경 감지 기능은 동작한다.
 
 #### 기능을 위한 별도의 인터페이스 제공
-![상속관계와 프록시3](../assets/img/proxy3.jpeg)
+![상속관계와 프록시3](../../assets/img/proxy3.jpeg)
 ```java
 public interface TitleView {
     String getTitle();
@@ -414,7 +414,7 @@ orderItem.printItem();
 이 방법을 사용할 때는 프록시의 특징 때문에 프록시의 대상이 되는 타입에 인터페이스를 적용해야 한다.
 
 #### 비지터 패턴 사용
-![상속관계와 프록시4](../assets/img/visitor.jpg)
+![상속관계와 프록시4](../../assets/img/visitor.jpg)
 비지터 패턴은 Visitor와 Visitor를 받아들이는 대상 클래스로 구성된다. Item은 accept(visitor) 메소드를 사용해서 Visitor를 받아들인다. 다만 단순히 Visitor를 받아들이기만 할 뿐, 실제 로직은 Visitor가 처리한다.
 
 * 장점

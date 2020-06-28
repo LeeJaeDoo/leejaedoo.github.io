@@ -407,7 +407,7 @@ public void findInverse() {
 
 ### 매핑의 한계와 극복: 연결 엔티티
 @ManyToMany를 사용하면 연결 테이블을 자동으로 처리해주므로 도메인 모델이 단순해지고 편리하지만, 일반적으로 만약 회원잇 상품을 주문하면 연결 테이블에 단순히 memberId와 productId만 담기는 것이 아닌 다른 컬럼(ex. 상품 주문 날짜..)이 더 필요할 수 있다. 따라서 실무에서 사용하기에는 한계가 있다. 이렇게 다른 컬럼이 추가되게 되면 추가된 컬럼에 대한 매핑이 불가하기 때문에 더 이상 @ManyToMany를 사용할 수 없게 된다. 따라서 연결 테이블과 매핑 되는 `연결 엔티티`를 만들어 다대다에서 엔티티 간에 다대일과 일대다 관계로 풀어야 한다. 
-![다대다_연결엔티티](../assets/img/manytomany.jpg)
+![다대다_연결엔티티](../../assets/img/manytomany.jpg)
 ```java
 @Entity
 public class Member {
@@ -509,7 +509,7 @@ System.out.println("orderAmount = " + memberProduct.getOrderAmount());
 
 ### 다대다: 새로운 기본 키 사용
 데이터베이스에서 자동으로 생성해주는 대리 키를 Long 값으로 사용하는 것이다. 장점으로는 간편하고 영구히 쓸 수 있으며 비즈니스에 의존하지 않는다. 그리고 ORM 매핑 시, 복합 키를 만들지 않아도 되므로 간단히 매핑이 가능하다.
-![다대다_새로운기본키](../assets/img/manytomany_1.jpg)
+![다대다_새로운기본키](../../assets/img/manytomany_1.jpg)
 ```java
 @Entity
 public class Order {    //  MemberProductMapping에서 Order로 명칭 변경
