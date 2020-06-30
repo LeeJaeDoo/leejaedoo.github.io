@@ -147,3 +147,99 @@ public static <T> Collector<T, ?, Long> counting() {
 
 #### 자신의 상황에 맞는 최적의 방법 선택
 스트림 인터페이스에서 직접 제공하는 메서드를 이용하는 것 보다 컬렉터를 이용하는 코드가 더 복잡한 경우를 알 수 있었다. 대신, 재사용성과 커스터마이즈 기능을 통해 추상화와 일반화를 얻을 수 있었다.
+
+## 그룹화
+데이터 집합을 그룹화할 때도 명령형으로 처리하게 되면 가독성도 떨어지고 에러도 많이 발생된다. 함수형을 이용하면 가독성도 좋고 한 줄의 코드로 그룹화를 구현할 수 있다.
+```java
+Map<Dish.Type, List<Dish>> dishesByType = menu.stream().collect(groupingBy(Dish::getType));
+
+//  결과 : {MEAT=[pork, beef, chicken], FISH=[prawns, salmon], OTHER=[french fries, rice, season fruit, pizza]}
+```
+스트림의 각 요리에서 Dish.Type과 일치하는 모든 요리를 추출하는 함수를 groupingBy 메서드로 전달했다. 이 함수를 기준으로 스트림이 그룹화되므로 이를 `분류 함수(classification function)`라고 한다.
+![grouping](../../assets/img/grouping.jpeg)
+그룹화 연산의 결과로 그룹화 함수가 반환하는 키, 그리고 각 키에 대응하는 스트림의 모든 항목 리스트를 값으로 갖는 맵이 반환된다.<br>
+단순한 속성 접근자 대신 복잡한 분류 기준이 필요할 때는 메서드 레퍼런스 대신 람다 표현식으로 필요한 로직을 구현할 수 있다.
+```java
+public enum CaloricLevel { DIET, NORMAL, FAT }
+
+Map<CaloricLevel, List<Dish>> dishesByCaloricLevel 
+    = menu.stream()
+          .collect(groupingBy(dish -> {
+                if (dish.getCalories() <= 400) {
+                    return CaloricLevel.DIET;
+                } else if (dish.getCalories() <= 700) {
+                    return CaloricLevel.NORMAL;
+                } else {
+                    return CaloricLevel.FAT;
+                }
+          }
+```
+
+### 다수준 그룹화
+다수준 그룹화란 두 가지 기준을 동시에 그룹화할 수 있는 기능이다. 두 인수를 받는 팩토리 메서드 Collectors.groupingBy를 이용해서 항목을 다수준으로 그룹화 할 수 있다.<br>
+바깥쪽 groupingBy 메서드에 스트림의 항목을 분류할 두 번째 기준을 정의하는 내부 groupingBy를 전달해서 두 수준으로 스트림의 항목을 그룹화할 수 있다.
+```java
+Map<Dish.Type, Map<CaloricLevel, List<Dish>>> dishesByTypeCaloricLevel = 
+    menu.stream().collect(
+        groupingBy(Dish::getType,
+            groupingBy(dish -> {
+                if (dish.getCalories() <= 400) {
+                    return CaloricLevel.DIET;
+                } else if (dish.getCalories() <= 700) {
+                    return CaloricLevel.NORMAL;
+                } else {
+                    return CaloricLevel.FAT;
+                }
+            })
+        )
+    );
+
+/* 결과 : {
+          OTHER={DIET=[rice, season fruit], NORMAL=[french fries, pizza]}, 
+          FISH={DIET=[prawns], NORMAL=[salmon]}, 
+          MEAT={DIET=[chicken], FAT=[pork], NORMAL=[beef]}
+         }
+*/
+```
+### 서브그룹으로 데이터 수집
+분류 함수 한 개의 인수를 갖는 groupingBy(f)는 사실 groupingBy(f, toList())의 축약형이다.<br>
+따라서 요리의 종류를 분류하는 컬렉터로 메뉴에서 가장 높은 칼로리를 가진 요리를 찾는 로직도 구현할 수 있다.
+```java
+Map<Dish.Type, Optional<Dish>> mostCaloricByType = 
+    menu.stream().collect(groupingBy(Dish::getType, maxBy(comparingInt(Dish::getCalories))));
+
+//  결과 : {OTHER=Optional[pizza], MEAT=Optional[pork], FISH=Optional[salmon]}
+```
+#### 컬렉터 결과를 다른 형식에 적용하기
+마지막 그룹화 연산은 Optional.empty()를 값으로 가질 수 없기 때문에 Optional로 감쌀 필요가 없다. groupingBy 컬렉터는 스트림의 첫 번째 요소를 찾은 이후에야 그룹화 맵에 새로운 키를 추가하기 때문에 굳이 Optional 래퍼를 사용할 필요가 없다.<br>
+즉, 팩토리 메서드 Collectors.collectingAndThen으로 컬렉터가 반환한 결과를 다른 형식으로 활용할 수 있다.
+```java
+Map<Dish.Type, Dish> mostCaloricByType =
+    menu.stream()
+        .collect(groupingBy(Dish::getType,  //  분류함수
+                 collectingAndThen(maxBy(comparingInt(Dish::getCalories)),  //  감싸인 컬렉터
+                 Optional::get)));  //  변환함수. Optional에 포함된 값을 추출
+```
+팩토리 메서드 collectingAndThen은 적용할 컬렉터와 변환함수를 인수로 받아 다른 컬렉터를 반환한다. 반환되는 컬렉터는 기존 컬렉터의 래퍼 역할을 하며 collect의 마지막 과정에서 변환함수로 자신이 반환하는 값을 매핑한다.<br>
+리듀싱 컬렉터와 같은 반환 형식을 사용하므로 절대 Optional.empty()를 반환하지 않는다.
+![중첩컬렉터](../../assets/img/중첩컬렉터.jpeg)
+
+#### groupingBy와 함께 사용하는 다른 컬렉터 예제
+일반적으로 스트림에서 같은 그룹으로 분류된 모든 요소에 리듀싱 작업을 수행할 때는 팩토리 메서드 groupingBy에 두 번째 인수로 전달한 컬렉터를 사용한다.<br>
+* mapping 메서드
+
+```java
+Map<Dish.Type, Set<CaloricLevel>> caloricLevelByType = 
+    menu.stream().collect(
+        groupingBy(Dish::getType, mapping(dish -> {
+            if (dish.getCalories() <= 400) {
+                return CaloricLevel.DIET;
+            } else if (dish.getCalories() <= 700) {
+                return CaloricLevel.NORMAL;
+            } else {
+                return CaloricLevel.FAT;
+            }
+        }, toSet()))
+    );
+```
+mapping 메서드는 스트림의 인수를 변환하는 함수와 변환 함수의 결과 객체를 누적하는 컬렉터를 인수로 받는다. mapping은 입력 요소를 누적하기 전에 매핑 함수를 적용해서 다양한 형식의 객체를 주어진 형식의 컬렉터에 맞게 변환한다.
