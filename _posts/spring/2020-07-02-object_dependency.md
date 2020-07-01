@@ -141,3 +141,49 @@ public class UserDaoTest {
 여기서 UserDaoTest-UserDao-ConnectionMaker 구조로 설명할 수 있다. 컨텍스트(UserDao)를 사용하는 클라이언트(UserDaoTest)는 컨텍스트가 사용할 전략(ConnectionMaker를 구현한 클래스)을 컨텍스트의 생성자를 통해 제공해주는 것이 일반적이다.
 
 # 제어의 역전(IoC)
+## 오브젝트 팩토리
+UserDaoTest는 UserDao의 기능이 잘 동작하는지를 테스트하는것이 원래 목적이나 쓸데없이 UserDao와 ConnectionMaker의 완벽한 독립이 가능할 수 있도록 해주는 책임까지 떠맡고 있었다. 이를 분리시켜야 한다.
+### 팩토리
+객체의 생성 방법을 결정하고 그렇게 만들어진 객체를 돌려주는 기능을 하는 객체를 `팩토리`라고 부른다. 추상 팩토리 패턴이나 팩토리 메소드 패턴과는 달리 단지 객체를 생성하는 쪽과 생성된 객체를 사용하는 쪽을 분리시켜주 쪽의 역할과 책임을 분리시켜줄 뿐이다.<br>
+여기서는 DaoFactory라고 부르겠다.
+```java
+public class DaoFactory {
+    public UserDao userDao() {
+        ConnectionMaker connectionMaker = new DConnectionMaker();
+        UserDao userDao = new UserDao(connectionMaker); 
+        return userDao;
+    }
+}
+``` 
+팩토리의 메소드는 UserDao 타입의 객체를 어떻게 만들고 어떻게 준비시킬지 결정한다.
+```java
+public class UserDaoTest {
+    public static void main(String[] args) {
+        UserDao userDao = new DaoFactory().userDao();
+    }
+}
+```
+팩토리를 사용하여 UserDao에 connectionMaker 객체를 적용한다.
+![오브젝트팩토리](../../assets/img/오브젝트팩토리.jpeg)
+## 오브젝트 팩토리 활용
+DaoFactory에 UserDao뿐만아니라 다른 DAO도 넣으려면 어떻게 해야 할까?
+```java
+public class DaoFactory {
+    public UserDao userDao() {
+        return new UserDao(connectionMaker());
+    }
+   
+    public AccountDao accountDao() {
+        return new AccountDao(connectionMaker());
+    }
+
+    public ConnectionMaker connectionMaker() {
+        return new DConnectionMaker();  //  분리하여 중복을 제거한 객체 생성 코
+    }
+}
+```
+## 제어관계 역전
+제어권을 상위 템플 메소드에 넘기고 자신은 필요할 때 호출되어 사용되도록 하는 템플릿 메소드 패턴도 제어의 역전 개념을 활용한 디자인 패턴이라할 수 있다.
+프레임워크는 분명한 제어의 역전 개념이 적용되어 있어야 한다.
+
+# 스프링 IoC
