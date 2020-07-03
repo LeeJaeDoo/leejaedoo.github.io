@@ -241,12 +241,79 @@ DaoFactory가 UserDao를 비롯한 Dao 객체를 생성하고 DB 생성 객체�
 이외에 프로토타입 스코프는 싱글톤과 달리 요청할 때마다 새로운 오브젝트가 생성된다.
 # 의존관계 주입(DI)
 ## 제어의 역전과 의존관계 주입
+DaoFactory처럼 객체를 생성하고 관계를 맺어주는 등의 작업을 담당하는 기능을 일반화한 것이 스프링 IoC 컨테이너이다.<br>
+하지만 IoC 컨테이너라는 용어가 느슨하게 정의되어 폭넓게 사용되고 있어, 스프링의 특성을 명확히 드러내지 못하는 부분이 있었다. 서블릿 컨테이너처럼 서버에서 동작하는 서비스 컨테이너인지, 단순히 IoC 개념이 적용된 템플릿 메소드 패턴을 활용해 이루어진 프레임워크인지 파악이 어려웠다.<br>
+이러한 이유를 가지고 스프링이 제공하는 IoC 방식의 핵심을 짚어주는 `의존관계 주입` 이라는 용어가 나오게 되었다.<br>
+의존관계 주입은 스프링의 대표적인 동작 원리이다.
 ## 런타입 의존관계 설정
 ### 의존관계
+의존관계란 곧 방향성이다. 누가 누구에게 의존하는 관계에 있다는 식이어야 한다. 여기서 의존하고 있다라는 것은 즉, A가 B를 의존하고 있다라면 B가 변할 때 A도 영향을 미친다. 하지만 A가 변할 때는 B는 영향을 받지 않는다. 방향성이 있다는 의미이다.
 ### UserDao의 의존관계
+모델이나 코드에서 클래스와 인터페이스를 통해 드러나는 의존관계가 아닌 런타임 시에 오브젝트 사이에서 만들어지는 의존관계가 있다. 이를 `런타임 의존관계` 또는 `오브젝트 의존관계`라고 부른다. 설계 시점의 의존관계가 실체화된 것이라 할 수 있다.<br>
+런타임시에 의존관계를 맺는 대상, 즉 실제 사용대상인 오브젝트를 `의존 오브젝트`라고 한다. 의존관계 주입은 이렇게 구체적인 의존 오브젝트와 그것을 사용할 주체, 보통 클라이언트라 부르는 오브젝트를 런타임시에 연결해주는 작업을 말한다.<br>
+의존관계 주입은 아래 3가지 조건을 만족하는 작업을 말한다.
+* 클래스 모델이나 코드에는 런타임 시점의 의존관계가 드러나지 않는다. 그러기 위해서는 인터페이스에만 의존하고 있어야 한다.
+* 런타임 시점의 의존관계는 컨테이너나 팩토리같은 제3의 존재(ex. 애플리케이션 컨텍스트, 빈 팩토리)가 결정한다.
+* 의존관계는 사용할 오브젝트에 대한 레퍼런스를 외부에 제공(주입)해줌으로써 만들어진다.
 ### UserDao의 의존관계 주입
+DaoFactory는 런타임 시점에 UserDao가 사용할 ConnectionMaker 타입의 오브젝트를 결정하고 이를 생성한 다음에 UserDao 생성자의 파라미터로 주입해서 UserDao와 ConnectionMaker가 런타임 의존관계를 맺게 해준다.
+![의존관계](../../assets/img/의존관계.jpeg)
+UserDao의 의존관계는 ConnectionMaker 인터페이스 뿐이다. 위 사진은 클래스 모델의 의존관계이므로 런타임시점에도 변경되지 않는다.<br>
+런타임 시점의 의존관계를 결정하고 만드려면 제3의 존재가 필요하다. 제3의 존재인 DI 컨테이너가 생성한 오브젝트 레퍼런스를 주입하기 위한 방법으로 생성자 메소드를 활용해 레퍼런스 파라미터를 주입한다.<br>
+DI 컨테이너는 자신이 결정한 의존관계를 맺어줄 클래스의 오브젝트를 만들고 이 생성자의 파라미터로 오브젝트의 레퍼런스를 전달해준다.
+```java
+public class UserDao {
+    private ConnectionMaker connectionMaker;
+
+    public UserDao (ConnectionMaker connectionMaker) {
+        this.connectionMaker = connectionMaker;
+    }
+}
+```
+이렇게 DI 컨테이너에 의해 런타임시에 의존 오브젝트를 사용할 수 있도록 레퍼런스를 전달받는 과정을 의존관계 주입이라고 한다.
+![런타임의존관계](../../assets/img/런타임의존관계.jpeg)
+DI는 자신이 사용할 오브젝트에 대한 선택과 생성 제어권을 외부에 넘기고 자신은 수동적으로 주입받은 오브젝트를 사용한다는 부분이 IoC의 개념과 맞는다.
 ## 의존관계 검색과 주입
-## 의존관계 주입의 응용
-### 기능 구현의 교환
-### 부가기능 추가
+스프링이 제공하는 IoC 기법에는 의존관계 주입 뿐만이 아니라 `의존관계 검색(DL)` 기능도 있다. 이는 의존관계를 맺는 방법이 외부로부터의 주입 뿐만이 아니라 스스로 검색하기도 한다. 즉, 자신이 필요로 하는 의존 오브젝트를 능동적으로 찾는다.<br>
+다만, 자신이 어떤 클래스의 오브젝트를 주입받을지 결정하는 것은 아니고(그러면 IoC라 할 수 없다.) 의존관계를 맺을 오브젝트를 결정, 생성은 IoC 컨테이너에 맡기면서 `주입받을 때 메소드나 생성자를 통한 주입이 아닌 스스로 컨테이너에게 요청`하는 방식의 차이가 있다.
+ ```java
+public UserDao {
+    DaoFactory daoFactory = new DaoFactory();
+    this.connectionMaker = daoFactory.connectionMaker();
+} 
+```
+위 코드를 보면 여전히 UserDao는 자신이 어떤 ConnectionMaker 오브젝트를 주입받을 지 알지 못하면서(여전히 의존대상은 ConnectionMaker 인터페이스 뿐) 런타임 시에 DaoFactory가 만들어주는 오브젝트와 동적으로 의존관계를 맺는다. 따라서 IoC 개념을 잘 따르고 있다.<br>
+하지만 이제부터 의존관계 주입방식과 차이가 있다면 외부로부터 주입이 아니라 IoC 컨테이너인 daoFactory에 직접 주입을 요구하고 있다.<br>
+이런 작업의 일반화가 적용된 애플리케이션 컨텍스트라면 미리 정해놓은 이름을 전달하여 그 이름에 해당하는 오브젝트를 찾는 형식이다. 바로 `getBean()` 메소드를 통해 찾는 것이다.
+```java
+public UserDao() {
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(DaoFactory.class);
+    this.connectionMaker = context.getBean("connectionMaker", ConnectionMaker.class); 
+}
+```
+하지만 의존관계 주입과 의존관계 검색 방식을 비교해보면 의존관계 주입이 코드가 더 깔끔하다.
+* DI : 자기 자신이 먼저 컨테이너가 관리하는 빈이 되어야 한다.
+* DL : 자신이 스프링의 빈일 필요가 없다.
 ## 메소드를 이용한 의존관계 주입
+생성자가 아닌 메소드를 이용해 의존 오브젝트와의 관계를 주입해주는 데는 크게 두 가지가 있다.
+### 수정자 메소드를 통한 주입
+setter 메소드는 외부로부터 제공받은 오브젝트 레퍼런스를 저장해뒀다가 내부의 메소드에서 사용하게 하는 DI 방식으로 활용하기 적당하다.
+```java
+public class UserDao {
+    private ConnectionMaker connectionMaker;
+    
+    public void setConnectionMaker(ConnectionMaker connectionMaker) {
+        this.connectionMaker = connectionMaker;
+    }
+}
+```
+```java
+@Bean
+public UserDao userDao(){
+    UserDao userDao = new UserDao();
+    userDao.setConnectionMaker(connectionMaker());
+    return userDao;
+}
+```
+### 일반 메소드를 통한 주입
+수정자 메소드처럼 한번에 한 개의 파라미터만 가질 수 있다는 제약이 불편할 때 여러 개의 파라미터를 갖는 일반 메소드를 DI용으로 활용할 수 있다.
