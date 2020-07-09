@@ -153,11 +153,108 @@ public class Accumulator {
 </table>
 
 ## 포크/조인 프레임워크
+포크/조인 프레임워크는 병렬화할 수 있는 작업을 재귀적으로 작은 작업으로 분할한 다음에 서브태스크 각각의 결과를 합쳐서 전체 결과를 만들도록 설계되었다.<br>
+포크/조인 프레임워크에서는 서브태스크를 스레드 풀(ForkJoinPool)의 작업자 스레드에 분산 할당하는 ExecutorService 인터페이스를 구현한다.
 ### RecursiveTask 활용
+스레드 풀을 이용하려면 RecursiveTask<R>의 서브클래스를 만들어야 한다. 여기서 R은 병렬화된 태스크가 생성하는 결과 형식 또는 결과가 없을 때(결과가 없더라도 다른 비지역 구조를 바꿀수 있다)는 RecursiveAction 형식이다.<br>
+RecursiveTask를 정의하려면 추상 메서드 compute를 구현해야 한다.
+```java
+protected abstract R compute();
+```
+compute 메서드는 태스크를 서브태스크로 분할하는 로직과 더 이상 분할할 수 없을 때 개별 서브태스크의 결과를 생산할 알고리즘을 정의한다.
+* compute 메서드 의사코드
+
+```java
+if (태스크가 충분히 작거나 더 이상 분할할 수 없으면) {
+    순차적으로 태스크 계산
+} else {
+    태스크를 두 서브태스크로 분할
+    태스크가 다시 서브태스크로 분할되도록 이 메서드를 재귀적으로 호출함
+    모든 서브태스크의 연산이 완료될 때까지 기다림
+    각 서브태스크의 결과를 합침
+}
+```
+
+이 알고리즘은 divide-and-conquer 알고리즘의 병렬화 버전이다.
+![포크/조인과정](../../assets/img/forkandjoin.jpeg)
+
 ### 포크/조인 프레임워크를 제대로 사용하는 방법
+* join 메서드를 태스크에 호출하면 태스크가 생산하는 결과가 준비될 때 까지 호출자를 블록시킨다. 따라서 두 서브태스크가 모두 시작된 다음에 join을 호출해야 한다. 그렇지 않으면 각각의 서브태스크가 다른 태스크가 끝나길 기다리게 되면서 순차 알고리즘보다 느리고 복잡한 프로그램이 될 수 있다.
+* RecursiveTask 내에서는 ForkJoinPool의 invoke 메서드 대신 compute나 fork 메서드를 호출한다. 순차 코드에서 병렬 계산을 시작할 때만 invoke를 사용한다.
+* 두 서브태스크에서 메서드를 호출할 때는 fork와 compute를 각각 호출하는 것이 효율적이다. 그러면 두 서브태스크의 한 태스크에는 같은 스레드를 재사용할 수 있으므로 풀에서 불필요한 태스크를 할당하는 오버헤드를 피할 수 있다.
+* 포크/조인 프레임워크를 이용하는 병렬 계산은 디버깅이 어렵다.
+* 멀티코어에서 포크/조인 프레임워크를 사용하는 것이 순차처리보다 무조건 빠른 것은 아니다. `병렬 처리로 성능을 개선하려면 태스크를 여러 독립적인 서브태스크로 분할할 수 있어야 한다.`
 ### 작업 훔치기
+생략
 ## Spliterator
+Spliterator는 `분할할 수 있는 반복자`라는 의미다. Iterator 처럼 소스의 요소 탐색 기능을 제공하지만 병렬 작업에 특화돼있다.<br>
+자바 8은 컬렉션 프레임워크에 포함된 모든 자료구조에 사용할 수 있는 디폴트 Spliterator 구현을 제공한다. 컬렉션은 spliterator라는 메서드를 제공하는 Spliterator 인터페이스를 구현한다.
+
+```java
+public interface Spliterator<T> {
+    boolean tryAdvance(Consumer<? super T> action); //  Spliterator 의 요소를 하나씩 순차적으로 소비하면서 탐색해야 할 요소가 남아있으면 true를 반환(iterator 동작과 같다)
+    Spliterator<T> trySplit();  //  Spliterator 의 일부 요소(자신이 반환한 요소)를 분할해서 두 번째 Spliterator를 생성하는 메서드
+    long estimateSize();    //  탐색해야 할 요소 수 정보 제공 메서드
+    int characteristics();
+}
+```
 ### 분할 과정
+![재귀분할과정](../../assets/img/spliterator.jpeg)
+1단계 첫 번째 Spliterator에 trySplit을 호출하면 두 번째 Spliterator가 생성되고, trySplit의 결과가 null이 될 때 까지 이 과정을 반복한다. 4단계처럼 모든 trySplit의 결과가 null이면 재귀 분할 과정이 종료된다.
+#### Spliterator의 특성
+Spliterator의 characteristics 메서드는 Spliterator 자체의 특성 집합을 int 타입으로 반환한다.
+* Spliterator 특성
+
+<table>
+  <thead>
+    <tr>
+      <th>특성</th>
+      <th>의미</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ORDERED</td>
+      <td>리스트처럼 요소에 정해진 순서가 있으므로 Spliterator는 요소를 탐색하고 분할할 때 이 순서에 유의해야 한다.</td>
+    </tr>
+    <tr>
+      <td>DISTINCT</td>
+      <td>x, y 두 요소를 방문했을 때 x.equals(y)는 항상 false를 반환한다.</td>
+    </tr>
+    <tr>
+      <td>SORTED</td>
+      <td>탐색된 요소는 미리 정의된 정렬 순서를 따른다.</td>
+    </tr>
+    <tr>
+      <td>SIZED</td>
+      <td>크기가 알려진 소스(ex. Set)로 Spliterator를 생성했으므로 estimatedSize()는 정확한 값을 반환한다.</td>
+    </tr>
+    <tr>
+      <td>NONNULL</td>
+      <td>탐색하는 모든 요소는 null이 아니다</td>
+    </tr>
+    <tr>
+      <td>IMMUTABLE</td>
+      <td>이 Spliterator의 소스는 불변이다. 즉, 요소를 탐색하는 동안 요소를 추가, 삭제할 수 없다.</td>
+    </tr>
+    <tr>
+      <td>CONCURRENT</td>
+      <td>동기화 없이 Spliterator의 소스를 여러 스레드에서 동시에 고칠 수 있다.</td>
+    </tr>
+    <tr>
+      <td>SUBSIZED</td>
+      <td>이 Spliterator 그리고 분할되는 모든 Spliterator는 SIZED 특성을 갖는다.</td>
+    </tr>
+  </tbody>
+</table>
+
 ### 커스텀 Spliterator 구현하기
+생략
 ## 정리
+* 내부 반복을 이용하여 다른 스레드를 이용하지 않고도 스트림을 병렬로 처리할 수 있다.
+* 병렬 처리 성능이 무조건 빠른 것이 아니기 때문에 성능 측정을 해보는 것이 좋다.
+* 병렬 스트림은 처리해야할 데이터가 아주 많거나 각 요소를 처리하는데 오랜 시간이 걸릴 때 성능을 높일 수 있다.
+* 기본형 특화 스트림을 이용하는 것이 병렬 처리보다 더욱 성능을 높일 수 있는 방법이다.
+* 포크/조인 프레임워크는 병렬화할 수 있는 태스크를 작은 태스크로 분할한 후, 분할된 태스크를 각각의 스레드로 실행하며 서브태스크 각각의 결과를 합쳐서 최종 결과를 생산한다.
+* Spliterator는 탐색하려는 데이터를 포함하는 스트림을 어떻게 병렬화 할 것인지를 정의한다.
 
