@@ -83,13 +83,15 @@ Exeption 클래스는 체크 예외와 언체크 예외로 구분된다.
     * RuntimeException 클래스를 상속받는다.
     * RuntimeException은 Exception의 서브클래스이므로 Exception의 일종이긴 하지만 자바는 RuntimeException과 그 서브클래스는 특별하게 다룬다.
 ![Exception의 두 가지 종류](../../assets/img/exception.jpeg)
-일반적으로 예외라고 하면 Exception 클래스의 서브클래스 중 RuntimeException 을 상속하지 않은 것만을 말하는 체크 예외라고 생각하면 된다. `체크 예외가 발생할 수 있는 메소드를 사용할 경우 반드시 예외를 처리하는 코드를 함께 작성`해야 한다. 그렇지 않으면 컴파일 에러가 발생한다.    
+일반적으로 예외라고 하면 Exception 클래스의 서브클래스 중 RuntimeException 을 상속하지 않은 것만을 말하는 체크 예외라고 생각하면 된다. `체크 예외가 발생할 수 있는 메소드를 사용할 경우 반드시 예외를 처리하는 코드를 함께 작성`해야 한다. 그렇지 않으면 컴파일 에러가 발생한다.
+    
 ### RuntimeException과 언체크/런타임 예외
 java.lang.RuntimeException 클래스를 상속한 예외들은 명시적인 예외처리를 강제하지 않기 때문에 언체크 예외라고 불린다. 또는 대표 클래스 이름을 따서 런타임 예외라고도 한다.<br>
 에러와 마찬가지로 런타임 예외는 catch 문으로 잡거나 throws로 선언하지 않아도 된다.(명시적으로 throws로 선언해줘도 상관없다.)<br>
 대표적으로 `NullPointerException`이나 `IllegalArgumentException` 등이 있다. 이런 예외는 코드에서 미리 조건을 주어 피할 수 있다. 피할 수 있지만 개발자가 부주의해서 발생할 수 있는 경우에 발생하도록 만든 것이 런타임 예외다.<br>
 따라서 런타임 예외는 예상하지 못했던 예외상황에서 발생하는 것이 아니기 때문에 굳이 catch나 throws 사용하지 않아도 되도록 만든 것이다.<br>
-그러나, 체크 예외가 예외처리를 강제하는 것 때문에 예외 블랙홀이나 무책임한 throws 같은 코드가 남발되면서 최근에 자바 표준 스펙의 API들은 예상 가능한 예외상항을 다루는 예외는 체크 예외로 만들지 않는 경향이 있기도 하다.  
+그러나, 체크 예외가 예외처리를 강제하는 것 때문에 예외 블랙홀이나 무책임한 throws 같은 코드가 남발되면서 최근에 자바 표준 스펙의 API들은 예상 가능한 예외상항을 다루는 예외는 체크 예외로 만들지 않는 경향이 있기도 하다.
+  
 ## 예외처리 방법
 ### 예외 복구
 예외상황을 파악하고 문제를 해결해서 정상 상태로 돌려놓는 방법이다.<br>
@@ -97,6 +99,7 @@ java.lang.RuntimeException 클래스를 상속한 예외들은 명시적인 예�
 ### 예외처리 회피
 예외처리를 자신이 담당하지 않고 자신을 호출한 쪽으로 던져버리는 방법이다. throws 문으로 선언해서 예외가 발생하면 알아서 던져지게 하거나 catch 문으로 일단 예외를 잡은 후에 로그를 남기고 다시 예외를 던지는(rethrow) 방식이다.<br>
 즉, 예외를 자신이 처리하지 않고 회피하는 방법이다. 예외처리를 회피하려면 반드시 다른 오브젝트나 메소드가 예외를 대신 처리할 수 있도록 아래처럼 던져줘야 한다.
+
 ```java
 public void add() throws SQLException {
     //  JDBC API
@@ -111,6 +114,7 @@ public void add() throws SQLException {
     }
 }
 ```
+
 하지만, 콜백과 템플릿처럼 긴밀하게 역할을 분담하고 있는 관계가 아니라면 자신의 코드에서 발생하는 예외를 그냥 던져버리는 것은 무책임한 회피가 될 수 있다.<br>
 예욀르 회피하는 것은 예외를 복구하는 것처럼 의도가 분명해야 한다. 콜백/템플릿처럼 긴밀한 관계에 있는 다른 오브젝트에게 예외처리 책임을 분명히 지게 하거나, 자신을 사용하는 쪽에서 예외를 다루는 게 최선의 방법이라는 분명한 확신이 있어야 한다.
 ### 예외 전환
@@ -218,15 +222,86 @@ try {
 }
 ```
 ## SQLException은 어떻게 됐나?
+대부분의 SQLException은 복구가 불가능하기 때문에 예외처리 전략을 적용해야 한다. 스프링의 JdbcTemplate이 이 예외처리 전략을 따르고 있다. JdbcTemplate 템플릿과 콜백 안에서 발생하는 모든 SQLException을 런타임 예외인 DataAccessException으로 포장해 던져주게 된다.<br>
+그 밖에도 스프링의 API 메소드에 정의되어 있는 대부분의 예외는 런타임 예외다. 따라서 발생 가능한 예외가 있다고 하더라도 이를 처리하도록 강제하지 않는다.
 # 예외 전환
+
+* 예외 전환의 목적
+    * 런타임 예외로 포장함으로써 불필요한 catch/throws를 줄여주는 것
+    * 로우레벨의 예외를 좀 더 의미있고 추상화된 예외로 바꿔 던져주는 것
+    
 ## JDBC의 한계
+표준화된 JDBC API가 DB 프로그램 개발 방법을 학습하는 부담은 확실히 줄여주지만 DB를 자유롭게 변경해서 사용할 수 있는 유연한 코드를 보장해주지는 못한다. 현실적으로 DB를 자유롭게 바꾸어 사용할 수 있는 DB 프로그램을 작성하는 데는 두 가지 걸림돌이 있다.
 ### 비표준 SQL
+SQL은 어느 정도 표준화된 언어이고 표준 규약도 있지만, 대부분의 DB는 표준을 따르지 않는 비표준 문법과 기능도 제공한다. 이런 비표준 문법이 사용될 때(ex. 대용량 데이터 최적화 처리, 페이징 처리 등) 결국 DAO에 종속적인 코드를 짤 수 밖에 없게 된다.<br>
+해결책으로, `호환 가능한 표준 SQL만 사용`하거나 `DB별 DAO를 생성`하거나 `SQL을 외부에 독립시켜 DB에 따라 변경하여 사용`하는 방법 등이 있지만 가장 좋은 방법은 `DB별 DAO를 생성`하거나 `SQL을 외부에 독립시켜 DB에 따라 변경하여 사용`하는 것이다.
 ### 호환성 없는 SQLException의 DB 에러정보
+DB 사용 중에 발생할 수 있는 예외의 원인은 DB마다 에러의 종류와 원인이 제각각이기 때문에 JDBC는 데이터 처리 중 발생한 다양한 예외를 SQLException 하나에 모두 담아버린다. 즉, `JDBC API는 이 SQLException 한 가지만 던지도록 설계되어 있다.` 또 DB 에러 코드는 DB 별로 모두 다르다. DB 벤더가 정의한 고유 에러 코드를 사용하기 때문이다.<br>
+따라서, SQLException은 예외가 발생했을 때의 DB 상태를 담은 SQL 상태정보를 부가적으로 제공하여(getSQLstate()) DB별로 달라지는 에러 코드를 대신할 수 있도록 한다.<br>
+하지만 문제는, DB의 JDBC 드라이버에서 SQLException을 담을 상태코드를 정확하게 만들어 주지 않는다.(;;) 결과적으로, 이 SQL 상태 코드만 믿고 예외처리 코드를 작성하는 것은 위험하다.<br>
+결국, 호환성 없는 에러 코드와 표준을 잘 따르지 않는 상태 코드를 가진 SQLException만으로 DB에 독립적인 유연한 코드를 작성하는 건 불가능에 가깝다.
 ## DB 에러 코드 매핑을 통한 전환
+위 두가지 문제를 해결해야 DB 종류가 바뀌더라도 DAO를 수정하지 않고 코드를 작성할 수 있다. 여기서는 SQLException의 비표준 에러 코드와 SQL 상태정보에 대한 해결책을 다룬다.<br>
+스프링은 `DataAccessException이라는 SQLException을 대체할 수 있는 런타임 예외를 정의`하고 있을 뿐 아니라, DataAccessException의 서브클래스로 세분화된 예외 클래스들을 정의하고 있다. `SQL 문법 때문에 발생하는 에러는 BadSqlGrammarException`, `DB 커넥션을 가져오지 못했을 때는 DataAccessResourceFailException`, `데이터의 제약조건을 위배했거나 일관성을 지키지 않는 작업을 수행했을 때는 DataIntegrityViollationException`, `그 중에서 중복 키 때문에 발생한 경우는 DuplicatedeyException`을 사용할 수 있다.<br>
+문제는 DB마다 에러 코드가 제각각이다. DAO 메소드나 JdbcTemplate등의 코드에서 일일히 DB별 에러 코드 종류를 구분하는 것은 매우 어렵다. 대신 스프링은 DB별 에러 코드를 분류해서 스프링이 정의한 예외 클래스와 매핑해놓은 에러 코드 매핑정보 테이블을 만들어두고 이를 이용한다.
+
+* 오라클 에러 코드 매핑 파일(sql-error-code.xml)
+
+```xml
+<bean id="MySQL" class="org.springframework.jdbc.support.SQLErrorCodes">
+		<property name="badSqlGrammarCodes">
+			<value>1054,1064,1146</value>
+		</property>
+		<property name="duplicateKeyCodes">
+			<value>1062</value>
+		</property>
+		<property name="dataIntegrityViolationCodes">
+			<value>630,839,840,893,1169,1215,1216,1217,1364,1451,1452,1557</value>
+		</property>
+		<property name="dataAccessResourceFailureCodes">
+			<value>1</value>
+		</property>
+		<property name="cannotAcquireLockCodes">
+			<value>1205</value>
+		</property>
+		<property name="deadlockLoserCodes">
+			<value>1213</value>
+		</property>
+	</bean>
+```
+
+> 참고 : [https://helols.tistory.com/167](https://helols.tistory.com/167)
+
 ## DAO 인터페이스와 DataAccessException 계층구조
+DataAccessException은 JDBC의 SQLException을 전환하는 용도 외에도 JDBC외의 자바 데이터 액세스 기술에서 발생하는 예외처리에도 적용된다. DataAccessException은 의미가 같은 예외라면 데이터 액세스 기술의 종류와 상관없이 일관된 예외가 발생하도록 만들어준다. 데이터 액세스 기술에 독립적인 추상화된 예외를 제공하는 것이다.
 ### DAO 인터페이스와 구현의 분리
+DAO를 굳이 따로 만들어 사용하는 이유는 무엇일까? 데이터 액세스 로직을 담은 코드를 성격이 다른 코드에서 분리해놓기 위해서다. 또한 분리된 DAO는 전략 패턴을 적용해 구현 방법을 변경해서 사용할 수 있게 만들기 위해서이다.<br>
+그런데, DAO의 사용 기술과 구현 코드는 전략 패턴과 DI를 통해 DAO를 사용하는 클라이언트에게 감출 수 있지만 메소드 선언에 나타나는 예외정보가 문제가 될 수 있다.<br>
+결국, 인터페이스로 메소드의 구현은 추상화했더라도 구현 기술마다 던지는 예외가 다르기 때문에 메소드의 선언이 달라진다는 문제가 발생한다. DAO 인터페이스를 기술에 완전히 독립적으로 만드려면 예외가 일치하지 않는 문제도 해결해야 한다.<br>
+결국 클라이언트가 DAO의 기술에 의존적이 될 수 밖에 없다. 단지 인터페이스로 추상화하고, 일부 기술에서 발생하는 체크 예외를 런타임 예외로 전환하는 것만으로는 DAO 예외처리에 부족한 부분이 있다.
 ### 데이터 액세스 예외 추상화와 DataAccessException 계층구조
+그래서 스프링은 자바의 다양한 데이터 액세스 기술을 사용할 때 발생하는 예외들을 추상화해서 DataAccessException 계층구조 안에 정리해놓았다.<br>
+`DataAccessException은 자바의 주요 데이터 액세스 기술에서 발생할 수 있는 대부분의 예외를 추상화하고 있다.` 일부 기술에서만 발생하는 예외들은 (ex. ORM에서는 발생하지만 JDBC에는 없는 예외 처리) 계층구조로 분류해놓았다.<br>
+![JDBC를 이용한 낙관적인 락킹 예외 클래스의 적용](../../assets/img/optimistic_locking.jpeg)
+예를 들어 낙관적인 락킹이 발생한다고 할때, JDO, JPA, 하이버네이트 모두 다른 종류의 낙관적인 락킹 예외가 발생하게 된다. 하지만 스프링은 위 사진과 같이 계층 구조를 통해 DataAccessException의 서브클래스인 ObjectOpimisticLockingFailureException으로 통일된 예외 처리를 가능하게 할 수 있다.<br>
+
+인터페이스 사용, 런타임 예외 전환과 함께 DataAccessException 예외 추상화를 적용하면 데이터 액세스 기술과 구현 방법에 독립적인 이상적인 DAO를 만들 수 있다. 
 ## 기술에 독립적인 UserDao 만들기
+### 인터페이스 적용
 ### 테스트 보완
 ### DataAccessException 활용 시 주의사항
+DuplicateKeyException은 아직 JDBC를 이용하는 경우에만 발생한다. 하이버네이트나 JPA를 사용할 때는 다른 예외가 던져진다. 스프링이 최종적으로 DataAccessException으로 변환하긴 하지만, DB의 에러 코드와 달리 이런 예외들은 세분화되어 있지 않기 때문이다.<br>
+
+> 하이버네이트 : ConstraintViolationException 발생 -> 스프링은 이를 좀 더 포괄적인 상위 계층의 예외인 DataIntegrityViolationException으로 변환할 수 밖에 없다. 하지만 너무 상위 계층의 예외이기 때문에 제약조건을 위반하는 예외에도 동일한 예외가 던져져, 키 값이 중복되는 예외와 구분할 수 없다.
+
+DataAccessException이 기술에 상관없이 어느 정도 추상화된 공통 예외로 변환해주긴 하지만 근본적인 한계(ex. 위 사례)때문에 완벽하다고 볼 수는 없다. 따라서 위와 같은 경우 미리 학습 테스트를 만들어 실제 전환되는 예외의 종류를 확인해둘 필요가 있다.
 # 정리
+* 예외를 잡아서 아무런 조치를 취하지 않거나, 의미 없는 throws 선언을 남발하는 것은 위험하다.
+* 예외는 복구하거나 예외처리 오브젝트도 의도적으로 전달하거나 적절한 예외로 전환해야 한다.
+* 좀 더 의미있는 예외로 변경하거나, 불필요한 catch/throws를 피하기 위해 런타임 예외로 포장하는 두 가지 방법의 예외 전환이 있다.
+* 복구할 수 없는 예외는 가능한 한 빨리 런타임 예외로 전환하는 것이 바람직하다.
+* 애플리케이션의 로직을 담기 위한 예외는 체크 예외로 만든다.
+* JDBC의 SQLException은 대부분 복구할 수 없는 예외이므로 런타임 예외로 포장해야 한다.
+* SQLException의 에러 코드는 DB에 종속되기 떄문에 DB에 독립적인 예외로 전환될 필요가 있다.
+* 스프링은 DataAccessException을 통해 DB에 독립적으로 적용 가능한 추상화된 런타임 예외 계층을 제공한다.
+* DAO를 데이터 액세스 기술에서 독립시키려면 인터페이스 도입과 런타임 예외 전환, 기술에 독립적인 추상화된 예외로 전환이 필요하다.
