@@ -245,29 +245,29 @@ DB 사용 중에 발생할 수 있는 예외의 원인은 DB마다 에러의 종
 스프링은 `DataAccessException이라는 SQLException을 대체할 수 있는 런타임 예외를 정의`하고 있을 뿐 아니라, DataAccessException의 서브클래스로 세분화된 예외 클래스들을 정의하고 있다. `SQL 문법 때문에 발생하는 에러는 BadSqlGrammarException`, `DB 커넥션을 가져오지 못했을 때는 DataAccessResourceFailException`, `데이터의 제약조건을 위배했거나 일관성을 지키지 않는 작업을 수행했을 때는 DataIntegrityViollationException`, `그 중에서 중복 키 때문에 발생한 경우는 DuplicatedeyException`을 사용할 수 있다.<br>
 문제는 DB마다 에러 코드가 제각각이다. DAO 메소드나 JdbcTemplate등의 코드에서 일일히 DB별 에러 코드 종류를 구분하는 것은 매우 어렵다. 대신 스프링은 DB별 에러 코드를 분류해서 스프링이 정의한 예외 클래스와 매핑해놓은 에러 코드 매핑정보 테이블을 만들어두고 이를 이용한다.
 
-* 오라클 에러 코드 매핑 파일(sql-error-code.xml)
+* MySQL 에러 코드 매핑 파일(sql-error-code.xml)
 
 ```xml
 <bean id="MySQL" class="org.springframework.jdbc.support.SQLErrorCodes">
-		<property name="badSqlGrammarCodes">
-			<value>1054,1064,1146</value>
-		</property>
-		<property name="duplicateKeyCodes">
-			<value>1062</value>
-		</property>
-		<property name="dataIntegrityViolationCodes">
-			<value>630,839,840,893,1169,1215,1216,1217,1364,1451,1452,1557</value>
-		</property>
-		<property name="dataAccessResourceFailureCodes">
-			<value>1</value>
-		</property>
-		<property name="cannotAcquireLockCodes">
-			<value>1205</value>
-		</property>
-		<property name="deadlockLoserCodes">
-			<value>1213</value>
-		</property>
-	</bean>
+	<property name="badSqlGrammarCodes">
+		<value>1054,1064,1146</value>
+	</property>
+	<property name="duplicateKeyCodes">
+		<value>1062</value>
+	</property>
+	<property name="dataIntegrityViolationCodes">
+		<value>630,839,840,893,1169,1215,1216,1217,1364,1451,1452,1557</value>
+	</property>
+	<property name="dataAccessResourceFailureCodes">
+		<value>1</value>
+	</property>
+	<property name="cannotAcquireLockCodes">
+		<value>1205</value>
+	</property>
+	<property name="deadlockLoserCodes">
+		<value>1213</value>
+	</property>
+</bean>
 ```
 
 > 참고 : [https://helols.tistory.com/167](https://helols.tistory.com/167)
