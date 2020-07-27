@@ -348,6 +348,7 @@ public void add() {
 ### upgradeLevels() 메소드 코드의 문제점
 for 루프 속에 조건문이 복잡하다.
 ### upgradeLevels() 리팩토링
+기존 upgradeLevels() 자주 변경될 가능성이 있는, 추상적인 로직의 흐름을 분리한다. 먼저 기본 흐름이 담긴 메소드를 구현한다.
 
 * 기본 작업 흐름만 남겨둔 upgradeLevels()
 
@@ -360,7 +361,14 @@ public void upgradeLevels() {
         }   
     }
 }
+```
 
+그리고 나서 하나씩 구체적인 내용을 담은 메소드를 만든다.<br>
+상태에 따라서 업그레이드 조건만 비교하면 되므로, 역할과 책임이 명료해진다.
+
+* 업그레이드 가능 확인 메소드
+
+```java
 private boolean canUpgradeLevel(User user) {
     Level currentLevel = user.getLevel();
     switch(currentLevel) {
@@ -371,5 +379,125 @@ private boolean canUpgradeLevel(User user) {
     }
 }
 ```
+
+* 업그레이드 작업 메소드
+
+```java
+private void upgradeLevel(User user) {
+    if (user.getLevel() == Level.BASIC) user.setLevel(Level.SILVER);
+    else if (user.getLevel() == Level.SILVER)   user.setLevel(Level.GOLD);
+    userDao.update(user);
+}
+```
+
+위 처럼 업그레이드 작업용 메소드를 따로 분리함으로써 추후 추가되는 작업이 있더라도 어느 곳을 수정해야 할지 명확해진다.<br>
+하지만 위 upgradeLevels() 메소드는 다음 단계가 무엇인지 알려주는 로직과 그 때 사용자 오브젝트의 level 필드를 변경해준다는 로직이 함께 있는데다 노골적으로 드러나있다. 게다가 예외상황에 대한 처리도 없다.<br>
+그래서 위와 같이 레벨의 순서와 다음 단계 레벨이 무엇인지 결정하는 일은 Level이 맡도록 분리하였다.
+
+* 업그레이드 순서를 담고 있도록 수정한 Level
+
+```java
+public enum Level {
+    GOLD(3, null),
+    SILVER(2, GOLD),
+    BASIC(1, SILVER);
+
+    private final int value;
+    private final Level next;
+
+    Level(int value, Level next) {
+        this.value = value;
+        this.next = next;
+    }
+
+    public int intValue() {
+        return value;
+    }
+
+    public Level nextLevel() {
+        return this.next;
+    }
+
+    public static Level valueOf(int value) {
+        switch(value) {
+            case 1: return BASIC;
+            case 2: return SILVER;
+            case 3: return GOLD;
+            default: throw new AssertionError("Unknown value: " + value);
+        }
+    }
+}
+```
+
+이렇게 구현함으로써 레벨의 업그레이드 순서는 Level enum 안에서 관리할 수 있다. 다음 단계의 레벨이 무엇인지를 일일이 if 조건식을 만들어서 비즈니스 로직에 담아둘 필요가 없다.<br>
+이제 사용자 정보가 바뀌는 부분을 UserService에서 User로 이동시킨다. User의 내부 정보가 변경되는 부분은 UserService보다는 User가 스스로 다루는 게 적절하기 때문이다.
+
+* User의 레벨 업그레이드 작업용 메소드
+
+```java
+public void upgradeLevel() {
+    Level nextLevel = this.level.nextLevel();
+    if (nextLevel == null) {
+        throw new IllegalStateException(this.level + "은 업그레이드가 불가능합니다.");
+    } else {
+        this.level = nextLevel;
+    }
+}
+```
+
+덕분에 UserService는 User 오브젝트에게 알아서 업그레이드에 필요한 작업을 수행하라고 요청만 해주면 되기 때문에, upgradeLevel() 메소드가 아래처럼 간결해진다.
+
+* upgradeLevel()
+
+```java
+private void upgradeLevel(User user) {
+    user.upgradeLevel();
+    userDao.update(user);
+}
+```
+
+이로써 if 문장이 많던 이전 코드보다 간결하고 작업 내용이 명확하게 드러나면서 각 오브젝트가 해야할 책임도 깔끔하게 분리되었다.<br>
+
+지금 개선한 코드를 보면 핵심은 각 오브젝트와 메소드가 각각 자기 몫의 책임을 맡아 일하는 구조로 만들어졌음을 알 수 있다. 각자 자기 책임에 충실한 작업만 하게되니 코드를 이해하기도 쉽다.<br>
+`객체지향적인 코드는 다른 오브젝트의 데이터를 가져와서 작업하는 대신 데이터를 갖고 있는 다른 오브젝트에게 작업을 해달라고 요청한다.` 오브젝트에게 데이터를 요구하지 말고 작업을 요청하라는 것이 객체지향 프로그래밍의 가장 기본이 되는 원리이기도 하다.
 ### User 테스트
+
+* User 테스트
+
+```java
+...
+public class UserTest {
+    User user;
+
+    @Before
+    public void setUp() {
+        user = new User();
+    }
+
+    @Test()
+    public void upgradeLevel() {
+        Level[] levels = Level.values();
+        for (Level level : levels) {
+            if (level.nextLevel() == null) continue;
+            user.setLevel(level);
+            user.upgradeLevel();
+            assertThat(user.getLevel(), is(level.nextLevel()));
+        }
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void cannotUpgradeLevel() {
+        Level[] levels = Level.values();
+        for(Level level : levels) {
+            if (level.nextLevel() != null) continue;
+            user.setLevel(level);
+            user.upgradeLevel();
+        }
+    }
+}
+```
+
+User 클래스에 대한 테스트는 굳이 스프링의 테스트 컨텍스트를 사용하지 않아도 된다. User 오브젝트는 스프링이 IoC로 관리해주는 오브젝트가 아니기 때문이다. 컨테이너가 생성한 오브젝트를 @Autowired로 가져오는 대신 생성자를 호출해서 테스트할 User 오브젝트를 만들면 된다.
+
+> User 엔티티였다하더라도 스프링 IoC 컨테이너가 관리하지 않을까?
 ### UserServiceTest 개선
