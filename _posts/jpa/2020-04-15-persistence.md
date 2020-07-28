@@ -50,7 +50,7 @@ JPA 구현체들은 EntityManagerFactory를 생성할 때 커넥션풀도 생성
 
 ## 엔티티 생명주기
 ![LifeCycle](../../assets/img/entity_lifecycle.jpg)
-### 비영속(new/trasient)
+### 비영속(new/transient)
 #### 영속성 컨텍스트와 전혀 관계가 없는 상태
 ![Transient](../../assets/img/transient.jpg)
 ```java
