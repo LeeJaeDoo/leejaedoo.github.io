@@ -51,6 +51,7 @@ ApplePredicate는 사과 선택 전략을 캡슐화 하였다.
                 result.add(apple);
             }
         }
+        return result;
     }
 ```
 위 처럼 filterApples메소드가 ApplePredicate 객체를 파라미터로 받게 되면서 filterApples 메소드 내 반복적인 컬렉션 로직과 컬렉션 각 요소에 적용할 동작을 분리할 수 있게 되었다. 이제 적절한 조건의 메소드만 생성하여 filterApples 메소드의 predicate 파라미터로 추가만 되면 Apple 속성과 관련한 모든 조건 변화에 대응 가능한 유연한 코드를 만들 수 있다.
@@ -58,7 +59,7 @@ ApplePredicate는 사과 선택 전략을 캡슐화 하였다.
 
     pubic class AppleRedAndHeavyPredicate implements ApplePredicate {
         public boolean test (Apple apple) {
-            retur "red".equals(apple.getColor()) && apple.getHeavy() > 150;
+            return "red".equals(apple.getColor()) && apple.getHeavy() > 100;
         }
     }
 
@@ -75,19 +76,44 @@ ApplePredicate는 사과 선택 전략을 캡슐화 하였다.
 기존에 일일히 `인터페이스를 구현하는 클래스를 인스턴스화` 하여 사용하는 상당히 번거로운 작업을 `익명 클래스`를 활용함으로써 해결하였으나, 여전히 코드의 수가 많고 익명 클래스의 불편함을 `람다 표현식`을 통해 깔끔하게 해결한다.   
 ### 익명 클래스
 위에서 본 것 처럼 동작 파라미터화를 통해 코드가 간결해졌다. 하지만 각각의 동작을 인스턴스화하는 로직을 일일히 생성해야 하는 번거로움이 남아있다. 이를 `익명 클래스를 통해 클래스의 선언과 인스턴스화를 동시에 수행`함으로써 해결 할 수 있다.
+
 > 람다 표현식을 활용하면 더 가독성 좋은 코드 구현이 가능하다.
 
 ```java
-    List<Apple> redAndHeavyApples = filterApples(inventory, new AppleRedHeavyPredicate() {
+
+    public interface ApplePredicate {
+        boolean test (Apple apple);
+    }
+
+    List<Apple> redAndHeavyApples = filterApples(inventory, new ApplePredicate() {
         public boolean test (Apple apple) {
-            return "red".equals(apple.getColor()) && apple.getHeavy() > 150;
+            return "red".equals(apple.getColor()) && apple.getWeight() > 100;
         }
     });
+
+    List<Apple> greenColorPredicate = filterApples(inventory, new ApplePredicate() {
+        public boolean test (Apple apple) {
+            return "green".equals(apple.getColor());
+        }
+    });
+
+    private static List<Apple> filterApples(List<Apple> inventory, ApplePredicate p) {
+        List<Apple> result = new ArrayList<>();
+        for (Apple apple : inventory) {
+            if (p.test(apple)) {
+                result.add(apple);
+            }
+        }
+        return result;
+    }
 ```
-하지만, 여전히 인스턴스화를 구현하는 과정에서 많은 공간을 차지하게 되고 익명 클래스의 사용에 익숙치 않게 되면 예기치 못한 이슈가 발생 할 수 있다. 
+익명 클래스로 `인터페이스를 구현하는 여러 클래스를 선언하는 과정`은 줄일 수 있게 됐다.<br>
+하지만, 여전히 인스턴스화를 구현하는 과정에서 많은 공간을 차지하게 되고 익명 클래스의 사용에 익숙치 않게 되면 예기치 못한 이슈가 발생 할 수 있다. 그리고 여전히 객체를 만들고(ex. new 객체 선언) 명시적으로 새로운 동작을 정의하는 메서드(ex. Predicate의 test)를 구현해야 하는 번거로움은 남아있다. 
 ### 람다 표현식
 ```java
     List<Apple> result = filterApples(inventory, (Apple apple) -> "red".equals(apple.getColor()));
+
+// List<Apple> result = filterApples(inventory, a -> "red".equals(a.getColor()));  같다.
 ```
 익명 클래스보다 더욱 간결해진 것을 알 수 있다.
 
