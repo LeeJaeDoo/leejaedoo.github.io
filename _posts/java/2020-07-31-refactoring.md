@@ -50,11 +50,68 @@ Runnable r2 = new Runnable() {
 * ex.
 
 ```java
+    public interface Task {
+        public void execute();
+    }
 
+    private static void doSomething(Runnable r) {
+        r.run();
+    }
+
+    private static void doSomething(Task a) {
+        a.execute();
+    }
+
+    doSomething(new Task() {    //  익명 클래스 : 아무런 문제 없음
+        @Override
+        public void execute() {
+            System.out.println("Danger danger!!");
+        }
+    });
+
+    /* Ambiguous method call. Both doSomething (Runnable) in Main and doSomething (Task) in Main match
+       아래와 같이 람다 표현식을 구현하면 위 두 함수 중 어느것을 구현한 것인지 알 수 없게 된다. 
+    */
+    doSomething(() -> System.out.println("Danger danger!!"));
+
+    //  명시적 형변환 (Task)를 이용해 모호함을 제거할 수 있다.
+    doSomething((Task) () -> System.out.println("Danger danger!!"));
 ```
 ## 람다 표현식을 메서드 레퍼런스로 리팩토링하기
+람다 표현식도 간결한 코드지만 대신 메서드 레퍼런스를 활용하면 좀 더 가독성을 높일 수 있다.
+
+* 람다 표현식
+
+```java
+Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = 
+    menu.stream()
+        .collect(
+            groupingBy(dish -> {
+                if (dish.getCalories() <= 400)  return CaloricLevel.DIET;
+                else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                else    return CaloricLevel.FAT;
+            })
+        );
+```
+
+* 메서드 레퍼런스
+
+```java
+Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = 
+    menu.stream().collect(groupingBy(Dish::getCaloricLevel));
+
+//  Dish 클래스에 getCaloricLevel 메서드를 구현해야 한다.
+public class Dish {
+    ...
+    public CaloricLevel getCaloricLevel() {
+        if (dish.getCalories() <= 400)  return CaloricLevel.DIET;
+        else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+        else    return CaloricLevel.FAT;
+    }
+}
+```
 ## 명령형 데이터 처리를 스트림으로 리팩토링하기
-## 코드 유연셩 개선
+## 코드 유연성 개선
 ### 함수형 인터페이스 적용
 ### 조건부 연기 실행
 ### 실행 어라운드
