@@ -577,17 +577,111 @@ DB는 그 자체로 완벽한 트랜잭션을 지원한다. 하나의 SQL 명령
 * 모든 작업을 무효화하는 롤백
 * 모든 작업을 다 확정하는 커밋
 
-애플리케이션 내에서 트랜잭션이 시작되고 끝나는 위치 위치를 트랜잭션의 경계라고 부른다.
-### UserService와 UserDao의 트랜잭션 문제
+애플리케이션 내에서 트랜잭션이 시작되고 끝나는 위치 위치를 트랜잭션의 경계라고 부른다. 트랜잭션의 경계는 하나의 Connection이 만들어지고 닫히는 범위 안에 존재한다. 이렇게 하나의 DB 커넥션 안에서 만들어지는 트랜잭션을 로컬 트랜잭션이라고도 한다.
 ### 비즈니스 로직 내의 트랜잭션 경계설정
+앞에서 말한 5개의 사용자 오브젝트를 순차적으로 가져와 회원 등급 업그레이드를 실행할 때 2번째 사용자의 레벨은 변경하는 도중 예외가 발생했을 떄, 5명 모두 롤백을 하기 위해서는 5명의 사용자의 레벨 업그레이드 로직이 하나의 트랜잭션 경계에 있어야 한다.<br>
+하지만 이렇게 되면 기껏 그동안 비즈니스 로직과 데이터 로직을 성격과 책임에 따라 분리하고, 느슨하게 연결하여 확장성을 좋게 해온 수고가 헛수고가 된다.<br>
+따라서, 이런 방식이 아닌 UserService와 UserDao는 그대로 둔 채로 트랜잭션을 적용하려면 결국 트랜잭션의 경계설정 작업을 UserService 쪽으로 가져와야 한다.<br>
+트랜잭션 경계를 upgradeLevels() 메소드안에 두고 DB 커넥션도 이 메소드 안에서 만들고, 종료시켜야 한다.
+
+* upgradeLevels의 트랜잭션 경계설정 구조
+
+```java
+public void upgradeLevels() throws Exception {
+    (1) DB Connection 생성
+    (2) 트랜잭션 시작
+    try {
+        (3) DAO 메소드 호출
+        (4) 트랜잭션 커밋
+    } catch (Exception e) {
+        (5) 트랜잭션 롤백
+        throw e;
+    } finally {
+        (6) DB Connection 종료
+    }
+}
+```
+
+여기서 생성된 Connection 오브젝트를 갖고 데이터 액세스 작업을 진행하는 코드는 UserDao의 update() 메소드 안에 있어야 한다. UserDao의 update() 메소드는 반드시 upgradeLevels() 메소드에서 만든 Connection을 사용해야 같은 트랜잭션 안에서 동작한다.<br>
+기존 JdbcTemplate처럼 매번 새로운 Connection 오브젝트를 만들어버리면, upgradeLevels() 안에서 시작한 트랜잭션과는 무관한 별개의 트랜잭션이 만들어지기 때문이다.<br>
+UserService에서 만든 Connection 오브젝트를 UserDao에서 사용하려면 DAO 메소드를 호출할 떄마다 Connection 오브젝트를 파라미터로 전달해줘야한다.
+
 ### UserService 트랜잭션 경계설정의 문제점
+이로써 트랜잭션 문제는 해결하지만 그 밖에 다른 문제가 있다.
+#### 더 이상 JdbcTemplate를 활용할 수 없다.
+#### DAO의 메소드와 비즈니스 로직을 담고 있는 UserService의 메소드에 Connection 파라미터가 추가돼야 한다.
+같은 Connection 오브젝트가 사용돼야 트랜잭션이 유지되기 때문이다. UserService는 스프링 빈으로 선언해서 싱글톤으로 돼있기 때문에 UserService에 Connection 을 저장해뒀다가 다른 메소드에서 사용할 수도 없다. 멀티스레드 환경에서는 문제가 되기 때문이다.<br>
+결국, 트랝개션이 필요한 작업에 참여하는 UserService의 메소드는 Connection파라미터로 지저분해질 것이다.
+#### Connection 파라미터가 UserDao 인터페이스 메소드에 추가되면 UserDao는 더 이상 데이터 액세스 기술에 독립적일 수 없다.
+JPA나 하이버네이트로 UserDao 구현 방식을 변경하려고 할 때마다 UserDao 인터페이스와 UserService 코드도 함께 수정돼야 할 것이다.
+#### DAO 메소드에 Connection 파라미터를 받게 되면 테스트 코드에도 영향을 미친다.
+테스트 코드에서도 직접 Connection 오브젝트를 일일이 만들어서 DAO 메소드를 호출하도록 모두 변경해야 한다.
 ## 트랜잭션 동기화
+객체지향 관점에 따라 분리되어 깔끔하게 정리된 코드와 트랜잭션 기능 두마리 토끼를 모두 잡을 수 있는 방법은 없을까?
 ### Connection 파라미터 제거
+upgradeLevels() 가 트랜잭션 경계설정을 해야 하는 것은 피할 수 없기 때문에 그 안에서 Connection을 생성하고 트랜잭션 시작과 종료를 관리해야 되긴 하지만, Connection 오브젝트를 계속 메소드의 파라미터로 전달하다가 DAO를 호출할 때 사용하는 것을 피하고 싶다.<br>
+이를 위해 스프링이 제안하는 방법은 독립적인 `트랜잭션 동기화(Transaction Synchronization)`방식이다.<br>
+트랜잭션 동기화란 UserService에서 트랜잭션을 시작하기 위해 만든 Connection 오브젝트를 특별한 저장소에 보관해두고, 이후에 호출되는 DAO의 메소드에서는 저장된 Connection 오브젝트를 가져다 사용하는 것이다.<br>
+정확히는 DAO가 사용하는 JdbcTemplate이 트랜잭션 동기화 방식을 이용하도록 하는 것이다. 그리고 트랜잭션이 모두 종료되면, 그 때는 동기화를 마치면 된다.
+![트랜잭션 동기화를 사용한 경우의 작업흐름](../../assets/img/transaction_sync.jpeg)
+(1) UserService에서 Connection 생성
+(2) 이를 트랜잭션 동기화 저장소에 저장해두고 트랜잭션을 시작시킨 후 본격적으로 DAO의 기능을 이용
+(3) 첫 번째 update() 메소드가 호출되고, 
+(4) update() 메소드 내부에서 이용하는 JdbcTemplate 메소드에서는 트랜잭션 동기화 저장소에 현재 시작되있는 트랜잭션을 가진 Connection 오브젝트가 존재하는지 확인한다. (2) upgradeLevels() 메소드 시작 부분에서 저장해둔 Connection을 발견하고 이를 가져온다.
+(5) 가져온 Connection 을 이용해 PreparedStatement 를 만들어 수정 SQL을 실행한다. 트랜잭션 동기화 저장소에서 DB 커넥션을 가져왔을 때는 JdbcTemplate은 Connection을 닫지 않은 채로 작업을 마친다. 이렇게 첫 번째 DB 작업을 마치고 여전히 Connection은 열려 있고 트랜잭션도 진행중인 채로 트랜잭션 동기화 저장소에 저장돼있다.
+(6) 두 번째 update()가 호출되면 이 때도 마찬가지로 
+(7) 트랜잭션 동기화 저장소에서 같은 Connection을 가져와 (8) 사용한다.
+(9) 마지막 update()도 (10) 같은 트랜잭션을 가진 Connection을 가져와 (11) 사용한다.
+(12) 트랜잭션 내 모든 작업이 정상적으로 끝났으면 Connection의 commit()을 호출해서 트랜잭션을 완료시킨다.
+(13) 마지막으로 트랜잭션 저장소가 더 이상 Connection 오브젝트를 저장해두지 않도록 이를 제거한다. 어느 작업 중에라도 예외상황이 발생하면 UserService는 즉시 Connection의 rollback()을 호출하고 트랜잭션을 종료할 수 있다. 물론 이 떄도 트랜잭션 저장소에 저장된 동기화된 Connection 오브젝트는 제거해줘야 한다.
+
+> 트랜잭션 동기화 저장소는 작업 스레드마다 독립적으로 Connection 오브젝트를 저장하고 관리하기 때문에 다중 사용자를 처리하는 서버의 멀티스레드 환경에서도 충돌이 날 염려는 없다.
+
+이렇게 트랜잭션 동기화 기법을 사용하면 파라미터를 통해 일일이 Connection 오브젝트를 전달할 필요가 없어진다.
 ### 트랜잭션 동기화 적용
-### 트랜잭션 테스트 보완
-### JdbcTemplate과 트랜잭션 동기화
+문제는 멀티스레드 환경에서도 안전한 트랜잭션 동기화 방법을 구현하는 일이 간단하지 않은데, 다행이도 스프링은 JdbcTemplate과 더불어 이런 트랜잭션 동기화 기능을 지원하는 간단한 유틸리티 메소드를 제공하고 있다.
+
+* 트랜잭션 동기화 방식을 적용한 UserService
+
+```java
+private DataSource dataSource;
+
+public void setDataSource(DataSource dataSource) {  //  Connection을 생성할 때 사용할 DataSource를 DI받는다.
+    this.dataSource = dataSource;
+}
+
+public void upgradeLevels() throws Exception {  //  
+    TransactionSymchronizationManager.initSynchronization();    //  트랜잭션 동기화 관리자를 이용해 동기화 작업을 초기화
+    Connection c = DataSourceUtils.getConnection(dataSource);   //  DB 커넥션을 생성하고 트랜잭션을 시작. 이후의 DAO 작업은 모두 여기서 시작한 트랜잭션 안에서 진행됨.
+    c.setAutoCommit(false);     //  트랜잭션의 시작 선언
+    //  DB 커넥션 생성과 동기화를 함께 해주는 유틸리티 메소드
+
+    try {
+        List<User> users = userDao.getAll();
+        for (User user : users) {
+            if (canUpgradeLevel(user)) {
+                upgradeLevel(user);
+            }
+        }
+        c.commit();     //  정상적으로 작업을 마치면 트랜잭션 커밋
+    } catch (Exception e) {
+        c.rollback();   //  예외가 발생하면 롤백
+        throw e;
+    } finally {
+        DataSourceUtils.releaseConnection(c, dataSource);   //  스프링 유틸리티 메소드를 이용해 DB 커넥션을 안전하게 닫는다.
+        TransactionSynchronizationManager.unbindResource(this.dataSource);  //  동기화 작업 종료
+        TransactionSynchronizationManager.clearSynchronization();           //  동기화 작업 정리
+    }
+}
+```
+
+UserService에서 DB 커넥션을 직접 다룰 때 DataSource가 필요하므로 DataSource 빈에 대한 DI 설정을 해둬야 한다.<br>
+스프링이 제공하는 트랜잭션 동기화 관리 클래스는 TransactionSynchronizationManager다. 그리고 DataSourceUtils에서 제공하는 getConnection() 메소드를 통해 DB 커넥션을 생성한다. DataSource에서 Connection을 직접 가져오지 않고, `스프링이 제공하는 유틸리티 메소드를 쓰는 이유는 이 DataSourceUtils의 getConnection() 메소드는 Connection 오브젝트를 생성해줄 뿐만 아니라 트랜잭션 동기화에 사용하도록 저장소에 바인딩해주기 때문`이다.<br>
+작업을 정상적으로 마치면 트랜잭션을 커밋해주고 스프링 유틸리티 메소드의 도움을 받아 커넥션을 닫고 트랜잭션 동기화를 마치도록 요청하면 된다. 만약 예외가 발생하면 트랜잭션을 롤백해준다. 이때도 DB 커넥션을 닫는 것과 동기화 작업 중단은 동일하게 진행해야 한다.
 ## 트랜잭션 서비스 추상화
+이로써 책임과 성격에 따라 데이터 액세스 부분과 비즈니스 로직을 잘 분리, 유지할 수 있게 만들었다.
 ### 기술과 환경에 종속되는 트랜잭션 경계설정 코드
+하지만, 새로운 문제가 발생한다. 이 사용자 관리 모듈을 구매해서 사용하기로 한 G 사에서 들어온 새로운 요구사항 때문이다.
 ### 트랜잭션 API의 의존관계 문제화 해결책
 ### 스프링의 트랜잭션 서비스 추상화
 ### 트랜잭션 기술 설정의 분리
