@@ -500,3 +500,99 @@ public class UserTest {
 
 User 클래스에 대한 테스트는 굳이 스프링의 테스트 컨텍스트를 사용하지 않아도 된다. User 오브젝트는 스프링이 IoC로 관리해주는 오브젝트가 아니기 때문이다. 컨테이너가 생성한 오브젝트를 @Autowired로 가져오는 대신 생성자를 호출해서 테스트할 User 오브젝트를 만들면 된다.
 
+# 트랜잭션 서비스 추상화
+## 모 아니면 도
+지금까지 구현해본 테스트 코드 실행 중 중간에 예외가 발생하여 작업이 중단된다면 결과가 어떻게 될까?<br>
+장애가 발생했을 때 일어나는 현상 중 하나의 예외를 의도적으로 발생시키는 코드를 짜서 테스트 해보자.
+### 테스트용 UserService 대역
+가장 간단한 방법은 예외를 강제로 발생시키도록 애플리케이션 코드를 수정하는 것이지만, 테스트를 위해 함부로 코드를 수정하는 것은 좋지 못한 방법이다. 테스트용으로 특별히 만든 UserService의 대역을 사용하는 방법이 좋다. 즉, UserService를 대신할 테스트 클래스를 만들자는 얘기다.<br>
+UserService를 상속해서 테스트에 필요한 기능을 추가하도록 일부 메소드를 오버라이딩 하는 방법이 좋을 듯 하다.
+
+* UserService의 테스트용 대역 클래스
+
+```java
+static class TestUserService extends UserService {
+    private String id;
+    
+    private TestUserService(String id) {    //  예외를 발생시킬 User 오브젝트의 id를 지정할 수 있게 만든다.
+        this.id = id;
+    }
+
+    protected void upgradeLevel(User user) {    //  UserService의 메소드를 오버라이드한다.
+        if (user.getId().equals(this.id)) {
+            throw new TestUserServiceException();   //  지정된 id의 User 오브젝트가 발견되면 예외를 던져서 작업을 강제로 중단시킨다.
+        }
+        super.upgradeLevel(user);        
+    }
+}
+```
+
+* 테스트용 예외
+
+```java
+static class TestUserServiceException extends RuntimeException {...}
+```
+
+### 강제 예외 발생을 통한 테스트
+
+* 예외 발생 시 작업 취소 여부 테스트
+
+```java
+@Test
+public void upgradeAllOrNothing() {
+    UserService testUserService = new TestUserService(users.get(3).getId());    //  예외 발생 시, 4번째 사용자의 id를 넣어 테스트용 UserService 대역 오브젝트를 생성한다.
+    testUserService.setUserDao(this.userDao);   //  userDao를 수동 DI 해준다.
+
+    userDao.deleteAll();
+    for (User user : users) userDao.add(user);
+
+    try {
+        testUserService.upgradeLevels();
+        fail("TestUserServiceException expected");  //  TestUserService는 업그레이드 작업 중에 예외가 발생해야 한다.
+                                                    //  정상 종료라면 문제가 있으니 실패.
+    } catch (TestUserServiceException e) {      //  TestUserService가 던져주는 예외를 잡아서 계속 진행되도록 한다. 그외의 예외라면 테스트 실패
+    }
+
+    checkLevelUpgraded(users.get(1), false);    //  예외가 발생하기 전에 레벨 변경이 있었던 사용자의 레벨이 처음 상태로 바뀌었나 확인
+}
+```
+
+TestUserService는 upgradeAllOrNothing() 테스트 메소드에서만 특별한 목적으로 사용하는 것이니, 번거롭게 스프링 빈으로 등록할 필요는 없다.
+결과는
+```text
+java.lang.AssertionError:
+Expected: is <BASIC>
+    got: <SILVER>
+```
+두 번째 사용자의 레벨이 BASIC에서 SILVER로 바뀐 것이 네 번째 사용자 처리 중 예외가 발생했지만 그대로 유지되고 있다.
+### 테스트 실패의 원인
+트랜잭션이 원인이다. 모든 사용자의 레벨을 업그레이드하는 작업인 upgradeLevel() 메소드가 하나의 트랜잭션 안에서 동작하지 않았기 때문이다.
+## 트랜잭션 경계설정
+DB는 그 자체로 완벽한 트랜잭션을 지원한다. 하나의 SQL 명령을 처리하는 경우는 DB가 트랜잭션을 보장해준다고 믿을 수 있다.<br>
+하지만, 여러 개의 SQL이 사용되는 작업을 하나의 트랜잭션으로 취급해야 하는 경우, 즉 두 번의 SQL이 실행되는데 첫 번째는 성공적으로 실행했지만 두 번째 SQL이 성공하기 전에 장애가 생겨 작업이 중단되면서 앞에서 처리한 SQL도 취소가 필요한 경우, 이런 취소 작업을 `트랜잭션 롤백`이라고 한다.<br>
+반대로 여러 개의 SQL을 하나의 트랜잭션으로 처리하는 경우에 모든 SQL 수행작업이 성공적으로 마무리됐다고 DB에 알려줘야 하는데 이를 `트랜잭션 커밋`이라고 한다.
+### JDBC 트랜잭션의 트랜잭션 경계설정
+모든 트랜잭션은 시작하는 지점과 끝나는 지점이 있다. 시작하는 방법은 한 가지이지만 끝나는 방법은 두 가지다.
+
+* 모든 작업을 무효화하는 롤백
+* 모든 작업을 다 확정하는 커밋
+
+애플리케이션 내에서 트랜잭션이 시작되고 끝나는 위치 위치를 트랜잭션의 경계라고 부른다.
+### UserService와 UserDao의 트랜잭션 문제
+### 비즈니스 로직 내의 트랜잭션 경계설정
+### UserService 트랜잭션 경계설정의 문제점
+## 트랜잭션 동기화
+### Connection 파라미터 제거
+### 트랜잭션 동기화 적용
+### 트랜잭션 테스트 보완
+### JdbcTemplate과 트랜잭션 동기화
+## 트랜잭션 서비스 추상화
+### 기술과 환경에 종속되는 트랜잭션 경계설정 코드
+### 트랜잭션 API의 의존관계 문제화 해결책
+### 스프링의 트랜잭션 서비스 추상화
+### 트랜잭션 기술 설정의 분리
+## 서비스 추상화와 단일 책임 원칙
+### 수직, 수평 계층구조와 의존관계
+### 단일 책임 원칙
+### 단일 책임 원칙의 장점
+
