@@ -681,12 +681,116 @@ UserService에서 DB 커넥션을 직접 다룰 때 DataSource가 필요하므�
 ## 트랜잭션 서비스 추상화
 이로써 책임과 성격에 따라 데이터 액세스 부분과 비즈니스 로직을 잘 분리, 유지할 수 있게 만들었다.
 ### 기술과 환경에 종속되는 트랜잭션 경계설정 코드
-하지만, 새로운 문제가 발생한다. 이 사용자 관리 모듈을 구매해서 사용하기로 한 G 사에서 들어온 새로운 요구사항 때문이다.
-### 트랜잭션 API의 의존관계 문제화 해결책
+하지만, 새로운 문제가 발생한다. 하나의 트랜잭션 안에서 여러 개의 DB에 데이터를 넣는 작업은 불가능하다. 왜냐하면 로컬 트랜잭션은 하나의 DB Connection에 종속되기 때문이다.<br>
+따라서 각 DB와 독립적으로 만들어지는 Connection을 통해서가 아니라, 별도의 트랜잭션 관리자를 통해 트랜잭션을 관리하는 `글로벌 트랜잭션(Global Transaction)`방식을 사용해야 한다.<br>
+글로벌 트랜잭션을 적용해야 `트랜잭션 매니저를 통해 여러 개의 DB가 참여하는 작업을 하나의 트랜잭션으로 만들 수 있다.`<br>
+자바는 JDBC외에 글로벌 트랜잭션을 지원하는 트랜잭션 매니저를 지원하기 위한 API인 JTA(Java Transaction API)를 제공하고 있다.
+![JTA를 통한 글로벌/분산 트랜잭션 관리](../../assets/img/global_transaction.jpeg)
+JTA를 이용해 여러 개의 DB 또는 메세징 서버에 대한 트랜잭션을 관리하는 방법을 보여준다. 기존 방법대로 DB는 JDBC, 메시징 서버는 JMS 같은 API를 사용해 필요한 작업을 수행하면서 트랜잭션은 JDBC나 JMS API를 사용해서 직접 제어하지 않고 JTA를 통해 트랝개션 매니저가 관리하도록 위임한다. 트랝개션 매니저는 DB와 메시징 서버를 제어하고 관리하는 각각의 리소스 매니저와 XA 프로토콜을 통해 연결된다. 이를 통해 트랜잭션 매니저가 실제 DB와 메시징 서버의 트랜잭션을 종합적으로 제어할 수 있게 된다.<br>
+이렇게 JTA를 이용해 트랜잭션 매니저를 활용하면 여러 개의 DB나 메시징 서버에 대한 작업을 하나의 트랜잭션으로 통합하는 분산 트랜잭션 또는 글로벌 트랜잭션이 가능해진다.<br>
+즉, 하나 이상의 DB가 참여하는 트랜잭션을 만드려면 JTA를 사용해야 한다.<br>
+다만, 여기서 문제는 JDBC 로컬 트랜잭션을 JTA를 이용하는 글로벌 트랜잭션으로 바꾸려면 UserService의 코드가 수정돼야 한다. UserService는 자신의 로직이 바뀌지 않았음에도 기술환경에 따라서 코드가 바뀌는 코드가 돼버릴 수 가 있다.<br>
+여기서 또 문제는, 다른 고객사에서 하이버네이트를 이용해 UserDao를 직접 구현했다고 한다면, 하이버네이트를 이용한 트랜잭션 관리코드와 JDBC, JTA의 코드가 다르다는 것이다. 하이버네이트는 Connection을 직접 사용하지 않고 Session이라는 것을 사용하고, 독자적인 트랜잭션 관리 API를 사용한다. 그렇다면 이번에는 UserService를 하이버네이트의 Session과 Transaction 오브젝트를 사용하는 트랜잭션 경계설정 코드로 변경할 수 밖에 없게 된다.
+### 트랜잭션 API의 의존관계 문제 해결책
+문제는 JDBC에 종속적인 Connection을 이용한 트랜잭션 코드가 UserService에 등장하면서 부터 UserService는 UserDaoJdbc에 간접적으로 의존하는 코드가 돼버렸다는 점이다.<br>
+UserService의 코드가 특정 트랜잭션 방법에 의존적이지 않고 독립적이려면 어떻게 해야 할까?<br>
+다행히도 트랜잭션의 경계설정을 담당하는 코드는 일정한 패턴을 갖는 유사한 구조다. 또한 DB에서 제공하는 DB 클라이언트 라이브러리와 API는 서로 전혀 호환되지 않는 독자적인 방식이지만 모두 SQL을 이용하는 방식이라는 공통점도 있다. 이러한 공통적인 부분, 트랜잭션 처리 코드에도 추상화를 도입하게 된다면 특정 기술에 종속되지 않는 트랜잭션 경계설정 코드를 만들 수 있을 것이다.
 ### 스프링의 트랜잭션 서비스 추상화
+스프링은 트랜잭션 기술의 공통점을 담은 트랜잭션 추상화 기술을 제공하고 있다. 이를 이용하면 애플리케이션에서 각 기술의 트랜잭션 API를 이용하지 않고도, 일관된 방식으로 트랜잭션을 제어하는 트랜잭션 경계설정 작업이 가능해진다.
+![스프링의 트랜잭션 추상화 계층](../../assets/img/transaction_abstracting.jpeg)
+스프링이 제공하는 트랜잭션 추상화 방법을 UserService에 적용해보면 아래와 같이 만들 수 있다.
+
+* 스프링의 트랜잭션 추상화 API를 적용한 upgradeLevels()
+
+```java
+public void upgradeLevels() {
+    //  JDBC 트랜잭션 추상 오브젝트 생성
+    PlatformTransactionManager transactionManager = new DataSourceTransactionanager(dataSource);
+
+    //  트랜잭션 시작
+    TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+
+    try {
+        List<User> users = userDao.getAll();
+        for (User user : users) {
+            if (canUpgradeLevel(user)) {
+                upgradeLevel(user);
+            }
+        }
+        transactionManager.commit(status);  //  트랜잭션 커밋
+    } catch (RuntimeException e) {
+        transactionManager.rollback(stauts);    //  트랝개션 롤백
+        throw e;
+    }
+}
+```
+
+#### 트랜잭션의 시작
+스프링이 제공하는 트랜잭션 경계설정을 위한 추상 인터페이스는 PlatformTransactionManager다.<br>
+JDBC의 로컬 트랜잭션을 이용한다면 PlatformTransactionManager를 구현한 DataSourceTransactionManager를 사용하면 된다. JDBC를 이용하는 경우, 먼저 Connection을 생성하고 나서 트랜잭션을 시작했지만, DataSourceTransactionManager에서는 `트랜잭션을 가져오는 요청인 getTransaction() 메소드를 호출`하기만 하면 된다. 필요에 따라 트랜잭션 매니저가 DB 커넥션을 가져오는 작업을 같이 수행해주기 떄문이다.(여기서 트랜잭션을 가져온다는 의미는 트랜잭션을 시작하는 의미로 생각하면 된다.)<br>
+파라미터로 넘기는 DefaultTransactionDefinition 오브젝트는 트랜잭션에 대한 속성을 담고 있다.<br>
+이렇게 시작된 트랜잭션은 TransactionStatus 타입의 변수에 저장된다. TransactionStatus는 트랜잭션에 대한 조작이 필요할 때 PlatformTransactionManager 메소드의 파라미터로 전달해주면 된다.
+#### 트랜잭션 작업
+스프링의 트랜잭션 추상화 기술은 앞에서 얘기했던 트랜잭션 동기화를 사용해야 한다. PlatformTransactionManager로 시작한 트랜잭션은 트랜잭션 동기화 저장소에 저장된다. PlatformTransactionManager를 구현한 DataSourceTransactionManager 오브젝트는 JdbcTemplate에서 사용될 수 있는 방식으로 트랜잭션을 관리해준다. 따라서 PlatformTransactionManager를 통해 시작한 트랜잭션은 UserDao의 JdbcTemplate 안에서 사용된다.
+#### 트랜잭션 작업 수행 후
+트랜잭션 작업을 모두 수행한 후에는 트랜잭션을 만들 때 돌려받은 TransactionStatus 오브젝트를 파라미터로 해서 PlatformTransactionManager의 commit() 메소드를 호출하면 된다. 예외가 발생하면 rollback() 메소드를 부른다.    
 ### 트랜잭션 기술 설정의 분리
+트랜잭션 추상화 API를 적용한 UserService 코드를 JTA를 이용하는 글로벌 트랜잭션으로 변경하려면 PlatformTransactionManager 구현 클래스를 DataSourceTransactionManager에서 JTATransactionManager로 바꿔주면 된다. JTATransactionManager는 주요 자바 서버에서 제공하는 JTA 정보를 JNDI를 통해 자동으로 인식하는 기능을 갖고 있기 때문에 별다른 설정 없이 JTATransactionManager를 사용하기만 해도 서버의 트랜잭션 매니저/서비스와 연동해서 동작한다. 만약 하이버네이트로 UserDao를 구현했다면 HibernateTransactionManager를, JPA를 적용했다면 JpaTransactionManager를 사용하면 된다.<br>
+모두 PlatformTransactionManager 인터페이스를 구현한 것이니 트랜잭션 경계설정을 위한 getTransaction(), commit(), rollback() 메소드를 사용한 코드는 전혀 손댈 필요가 없다.<br>
+```java
+PlatformTransactionManager txManager = new JTATransactionManager();
+```
+하지만, 어떤 트랜잭션 매니저 구현 클래스를 사용할 지 UserService 코드가 알고 있는 것은 DI 원칙에 위배된다. 자신이 사용할 클래스를 스스로 결정하고 생성하는 것이 아닌 컨테이너를 통해 외부에서 제공받게 하는 스프링 DI의 방식으로 변경이 필요하다.<br>
+그렇다면 DataSourceTransactionManager는 스프링 빈으로 등록하고 UserService가 DI 방식으로 사용하게 해야 한다. 
+
+> 어떤 클래스든 스프링의 빈으로 등록할 때 먼저 검토해야 할 것은 싱글톤으로 만들어져 여러 스레드에서 동시에 사용해도 괜찮은가 하는 점이다.
+
+스프링이 제공하는 모든 PlatformTransactionManager 의 구현 클래스는 싱글톤으로 사용이 가능하다.<br>
+UserService에서는 PlatformTransactionManager 인터페이스 타입의 인스턴스 변수를 선언하고, 수정자 메소드를 추가해서 DI가 가능하게 해준다.
+
+* 트랜잭션 매니저를 빈으로 분리시킨 UserService
+
+```java
+public class UserService {
+    ...
+    private PlatformTransactionManager transactionManager;
+
+    public void setTransactionManager(PlatformTransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
+    public void upgradeLevels() {
+        TransactionStatus status = this.transactionManager.getTransaction(new DefaultTransactionDefinition());
+
+        try {
+            List<User> users = userDao.getAll();
+            for (User user : users) {
+                if (canUpgradeLevel(user)) {
+                    upgradeLevel(user);
+                }
+            }
+            this.transactionManager.commit(status);
+        } catch (RuntimeException e) {
+            this.transactionManager.rollback(status);
+            throw e;
+        }
+    }
+    ...
+}
+```
 ## 서비스 추상화와 단일 책임 원칙
 ### 수직, 수평 계층구조와 의존관계
-### 단일 책임 원칙
+이렇게 기술과 서비스에 대한 추상화 기법을 이용하면 특정 기술환경에 종속되지 않는 포터블한 코드를 만들 수 있다. UserDao와 UserService는 각각 담당하는 코드의 기능적인 관심에 따라 분리되고, 서로 불필요한 영향을 주지 않으면서 독자적으로 확장이 가능하도록 만든 것이다. 같은 애플리케이션 로직을 담은 코드지만 내용에 따라 분리했다. 같은 계층에서 수평적인 분리라고 볼 수 있다.<br>
+트랜잭션의 추상화는 이와는 다르다. 애플리케이션의 비즈니스 로직과 그 하위에서 동작하는 로우레벨의 트랜잭션 기술이라는 아예 다른 계층의 특성을 갖는 코드를 분리한 것이다.
+![계층과 책임의 분리](../../assets/img/계층과책임의분리.jpeg)
+UserService와 UserDao는 애플리케이션 로직을 담고 있는 애플리케이션 계층이다. UserDao와 UserService는 인터페이스와 DI를 통해 연결됨으로써 결합도가 낮아졌다. 결합도가 낮다는 의미는 데이터 액세스 로직이 바뀌거나, 데이터 액세스 기술이 바뀐다하더라도 UserService의 코드에는 영향을 주지 않는다는 뜻이다. 즉, 서로 독립적으로 확장될 수 있다.<br>
+또, UserDao는 DB 연결을 생성하는 방법에 대해 독립적이다. DataSource 인터페이스와 DI를 통해 추상화된 방식으로 로우레벨의 DB 연결 기술을 사용하기 때문이다.<br>
+마찬가지로, UserService와 트랜잭션 기술과도 스프링이 제공하는 PlatformTransactionManager 인터페이스를 통한 추상화 계층을 사이에 두고 사용하개 했기 때문에, 구체적인 트랝개션 기술에 독립적인 코드가 됐다. 설령 서버가 바뀌고 로우레벨의 트랜잭션 기술이 변경된다고 해도 UserService는 영향을 받지 않는다.<br>
+애플리케이션 로직의 종류에 따른 수평적인 구분이든, 로직과 기술이라는 수직적인 구분이든 모두 결합도가 낮으며, 서로 영향을 주지 않고 자유롭게 확장될 수 있는 구조를 만들 수 있는 데는 스프링 DI 가 중요한 역할을 하고 있다. DI의 가치는 이렇게 관심, 책임, 성격이 다른 코드를 깔끔하게 분리하는데 있다.
+### 단일 책임 원칙(Single Responsibility Principle)
+이런 적절한 분리가 가져오는 특징은 단일 책임 원칙이라는 객체지향 설계의 핵심 원칙 중 하나로 설명할 수 있다. `단일 책임 원칙은 하나의 모듈은 한 가지 책임을 가져야 한다는 의미`다. 다시 말해 하나의 모듈이 바뀌는 이유는 한 가지여야 한다고 설명할 수 있겠다.<br>
 ### 단일 책임 원칙의 장점
+단일 책임 원칙을 잘 지키고 있다면, 어떤 변경이 필요할 때 수정 대상이 명확해진다. 기술이 바뀌면 기술 계층과의 연동을 담당하는 기술 추상화 계층의 설정만 변경하면 된다. 데이터를 가져오는 테이블의 이름이 바뀌었다면 데이터 액세스 로직을 담고 있는 UserDao를 변경하면 된다. 비즈니스 로직도 마찬가지다.<br>
+이렇게 적절하게 책임과 관심이 다른 코드를 분리하고, 서로 영향을 주지 않도록 다양한 추상화 기법을 도입하고, 애플리케이션 로직과 기술/환경을 분리하는 등의 작업을 위한 핵심적인 도구가 바로 DI다.<br>
+객체지향 설계와 프로그래밍의 원칙은 서로 긴밀하게 관련이 있다. 단일 책임 원칙을 잘 지키는 코드를 만드려면 인터페이스를 도입하고 이를 DI로 연결해야 하며, 그 결과로 단일 책임 원칙뿐 아니라 개방 폐쇄 원칙도 잘 지키고, 모듈 간에 결합도가 낮아서 서로의 변경이 영향을 주지 않고, 같은 이유로 변경이 단일 책임에 집중되는 응집도 높은 코드가 나오게 되기 떄문이다. 이런 과정에서 전략 패턴, 어댑터 패턴, 브리지 패턴, 미디에이터 패턴 등 많은 디자인 패턴이 자연스럽게 적용되기도 한다. 객체지향 설계 원칙을 잘 지켜서 만든 코드는 테스트하기도 편하다. 스프링이 지원하는 DI와 싱글톤 레지스트리 덕분에 더욱 편리하게 자동화된 테스트를 만들 수 있다.<br>
 
