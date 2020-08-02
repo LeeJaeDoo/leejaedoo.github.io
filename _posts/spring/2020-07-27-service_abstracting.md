@@ -588,16 +588,16 @@ DB는 그 자체로 완벽한 트랜잭션을 지원한다. 하나의 SQL 명령
 
 ```java
 public void upgradeLevels() throws Exception {
-    (1) DB Connection 생성
-    (2) 트랜잭션 시작
+    //  (1) DB Connection 생성
+    //  (2) 트랜잭션 시작
     try {
-        (3) DAO 메소드 호출
-        (4) 트랜잭션 커밋
+        //  (3) DAO 메소드 호출
+        //  (4) 트랜잭션 커밋
     } catch (Exception e) {
-        (5) 트랜잭션 롤백
+        //  (5) 트랜잭션 롤백
         throw e;
     } finally {
-        (6) DB Connection 종료
+        //  (6) DB Connection 종료
     }
 }
 ```
@@ -624,16 +624,16 @@ upgradeLevels() 가 트랜잭션 경계설정을 해야 하는 것은 피할 수
 트랜잭션 동기화란 UserService에서 트랜잭션을 시작하기 위해 만든 Connection 오브젝트를 특별한 저장소에 보관해두고, 이후에 호출되는 DAO의 메소드에서는 저장된 Connection 오브젝트를 가져다 사용하는 것이다.<br>
 정확히는 DAO가 사용하는 JdbcTemplate이 트랜잭션 동기화 방식을 이용하도록 하는 것이다. 그리고 트랜잭션이 모두 종료되면, 그 때는 동기화를 마치면 된다.
 ![트랜잭션 동기화를 사용한 경우의 작업흐름](../../assets/img/transaction_sync.jpeg)
-(1) UserService에서 Connection 생성
-(2) 이를 트랜잭션 동기화 저장소에 저장해두고 트랜잭션을 시작시킨 후 본격적으로 DAO의 기능을 이용
-(3) 첫 번째 update() 메소드가 호출되고, 
-(4) update() 메소드 내부에서 이용하는 JdbcTemplate 메소드에서는 트랜잭션 동기화 저장소에 현재 시작되있는 트랜잭션을 가진 Connection 오브젝트가 존재하는지 확인한다. (2) upgradeLevels() 메소드 시작 부분에서 저장해둔 Connection을 발견하고 이를 가져온다.
-(5) 가져온 Connection 을 이용해 PreparedStatement 를 만들어 수정 SQL을 실행한다. 트랜잭션 동기화 저장소에서 DB 커넥션을 가져왔을 때는 JdbcTemplate은 Connection을 닫지 않은 채로 작업을 마친다. 이렇게 첫 번째 DB 작업을 마치고 여전히 Connection은 열려 있고 트랜잭션도 진행중인 채로 트랜잭션 동기화 저장소에 저장돼있다.
-(6) 두 번째 update()가 호출되면 이 때도 마찬가지로 
-(7) 트랜잭션 동기화 저장소에서 같은 Connection을 가져와 (8) 사용한다.
-(9) 마지막 update()도 (10) 같은 트랜잭션을 가진 Connection을 가져와 (11) 사용한다.
-(12) 트랜잭션 내 모든 작업이 정상적으로 끝났으면 Connection의 commit()을 호출해서 트랜잭션을 완료시킨다.
-(13) 마지막으로 트랜잭션 저장소가 더 이상 Connection 오브젝트를 저장해두지 않도록 이를 제거한다. 어느 작업 중에라도 예외상황이 발생하면 UserService는 즉시 Connection의 rollback()을 호출하고 트랜잭션을 종료할 수 있다. 물론 이 떄도 트랜잭션 저장소에 저장된 동기화된 Connection 오브젝트는 제거해줘야 한다.
+(1) UserService에서 Connection 생성<br>
+(2) 이를 트랜잭션 동기화 저장소에 저장해두고 트랜잭션을 시작시킨 후 본격적으로 DAO의 기능을 이용<br>
+(3) 첫 번째 update() 메소드가 호출되고, <br>
+(4) update() 메소드 내부에서 이용하는 JdbcTemplate 메소드에서는 트랜잭션 동기화 저장소에 현재 시작되있는 트랜잭션을 가진 Connection 오브젝트가 존재하는지 확인한다. (2) upgradeLevels() 메소드 시작 부분에서 저장해둔 Connection을 발견하고 이를 가져온다.<br>
+(5) 가져온 Connection 을 이용해 PreparedStatement 를 만들어 수정 SQL을 실행한다. 트랜잭션 동기화 저장소에서 DB 커넥션을 가져왔을 때는 JdbcTemplate은 Connection을 닫지 않은 채로 작업을 마친다. 이렇게 첫 번째 DB 작업을 마치고 여전히 Connection은 열려 있고 트랜잭션도 진행중인 채로 트랜잭션 동기화 저장소에 저장돼있다.<br>
+(6) 두 번째 update()가 호출되면 이 때도 마찬가지로 <br>
+(7) 트랜잭션 동기화 저장소에서 같은 Connection을 가져와 (8) 사용한다.<br>
+(9) 마지막 update()도 (10) 같은 트랜잭션을 가진 Connection을 가져와 (11) 사용한다.<br>
+(12) 트랜잭션 내 모든 작업이 정상적으로 끝났으면 Connection의 commit()을 호출해서 트랜잭션을 완료시킨다.<br>
+(13) 마지막으로 트랜잭션 저장소가 더 이상 Connection 오브젝트를 저장해두지 않도록 이를 제거한다. 어느 작업 중에라도 예외상황이 발생하면 UserService는 즉시 Connection의 rollback()을 호출하고 트랜잭션을 종료할 수 있다. 물론 이 떄도 트랜잭션 저장소에 저장된 동기화된 Connection 오브젝트는 제거해줘야 한다.<br>
 
 > 트랜잭션 동기화 저장소는 작업 스레드마다 독립적으로 Connection 오브젝트를 저장하고 관리하기 때문에 다중 사용자를 처리하는 서버의 멀티스레드 환경에서도 충돌이 날 염려는 없다.
 
