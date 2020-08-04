@@ -577,7 +577,7 @@ DB는 그 자체로 완벽한 트랜잭션을 지원한다. 하나의 SQL 명령
 * 모든 작업을 무효화하는 롤백
 * 모든 작업을 다 확정하는 커밋
 
-애플리케이션 내에서 트랜잭션이 시작되고 끝나는 위치 위치를 트랜잭션의 경계라고 부른다. 트랜잭션의 경계는 하나의 Connection이 만들어지고 닫히는 범위 안에 존재한다. 이렇게 하나의 DB 커넥션 안에서 만들어지는 트랜잭션을 로컬 트랜잭션이라고도 한다.
+`애플리케이션 내에서 트랜잭션이 시작되고 끝나는 위치를 트랜잭션의 경계`라고 부른다. 트랜잭션의 경계는 하나의 Connection이 만들어지고 닫히는 범위 안에 존재한다. 이렇게 `하나의 DB 커넥션 안에서 만들어지는 트랜잭션을 로컬 트랜잭션`이라고도 한다.
 ### 비즈니스 로직 내의 트랜잭션 경계설정
 앞에서 말한 5개의 사용자 오브젝트를 순차적으로 가져와 회원 등급 업그레이드를 실행할 때 2번째 사용자의 레벨은 변경하는 도중 예외가 발생했을 떄, 5명 모두 롤백을 하기 위해서는 5명의 사용자의 레벨 업그레이드 로직이 하나의 트랜잭션 경계에 있어야 한다.<br>
 하지만 이렇게 되면 기껏 그동안 비즈니스 로직과 데이터 로직을 성격과 책임에 따라 분리하고, 느슨하게 연결하여 확장성을 좋게 해온 수고가 헛수고가 된다.<br>
@@ -611,7 +611,7 @@ UserService에서 만든 Connection 오브젝트를 UserDao에서 사용하려�
 #### 더 이상 JdbcTemplate를 활용할 수 없다.
 #### DAO의 메소드와 비즈니스 로직을 담고 있는 UserService의 메소드에 Connection 파라미터가 추가돼야 한다.
 같은 Connection 오브젝트가 사용돼야 트랜잭션이 유지되기 때문이다. UserService는 스프링 빈으로 선언해서 싱글톤으로 돼있기 때문에 UserService에 Connection 을 저장해뒀다가 다른 메소드에서 사용할 수도 없다. 멀티스레드 환경에서는 문제가 되기 때문이다.<br>
-결국, 트랝개션이 필요한 작업에 참여하는 UserService의 메소드는 Connection파라미터로 지저분해질 것이다.
+결국, 트랜잭션이 필요한 작업에 참여하는 UserService의 메소드는 Connection 파라미터로 지저분해질 것이다.
 #### Connection 파라미터가 UserDao 인터페이스 메소드에 추가되면 UserDao는 더 이상 데이터 액세스 기술에 독립적일 수 없다.
 JPA나 하이버네이트로 UserDao 구현 방식을 변경하려고 할 때마다 UserDao 인터페이스와 UserService 코드도 함께 수정돼야 할 것이다.
 #### DAO 메소드에 Connection 파라미터를 받게 되면 테스트 코드에도 영향을 미친다.
@@ -700,7 +700,7 @@ UserService의 코드가 특정 트랜잭션 방법에 의존적이지 않고 �
 ![스프링의 트랜잭션 추상화 계층](../../assets/img/transaction_abstracting.jpeg)
 스프링이 제공하는 트랜잭션 추상화 방법을 UserService에 적용해보면 아래와 같이 만들 수 있다.
 
-* 스프링의 트랜잭션 추상화 API를 적용한 upgradeLevels()
+* 스프링의 트랜잭션 추상화 API를 적용한 upgradeLvevels()
 
 ```java
 public void upgradeLevels() {
@@ -719,7 +719,7 @@ public void upgradeLevels() {
         }
         transactionManager.commit(status);  //  트랜잭션 커밋
     } catch (RuntimeException e) {
-        transactionManager.rollback(stauts);    //  트랝개션 롤백
+        transactionManager.rollback(stauts);    //  트랜잭션 롤백
         throw e;
     }
 }
