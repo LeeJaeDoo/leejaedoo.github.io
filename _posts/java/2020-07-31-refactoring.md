@@ -1,5 +1,5 @@
 ---
-date: 2020-08-011 18:40:40
+date: 2020-08-12 18:40:40
 layout: post
 title: 자바 8 인 액션
 subtitle: 8. 리팩토링, 테스팅, 디버깅
@@ -212,9 +212,11 @@ public void log(Level level, Supplier<String> msgSupplier) {
 * 다양한 알고리즘을 나타내는 한 개 이상의 인터페이스 구현(ConcreteStrategyA, ConcreteStrategyB 같은 구체적인 구현 클래스)
 * 전략 객체를 사용하는 한 개 이상의 클라이언트
 
-![전략패턴](../../assets/img/java_strategy_pattern.jpeg)
+![전략패턴](../../assets/img/java_s_pattern.jpeg)
 
 * ex.
+
+![전략패턴](../../assets/img/java_strategy_pattern.jpeg)
 
 ```java
 public interface ValidationStrategy {
@@ -258,6 +260,8 @@ public class Validator {
     }
 ```
 
+* result
+
 ```text
 false
 true
@@ -283,21 +287,282 @@ true
 람다 표현식을 활용하여 전략 패턴에서 발생하는 자잘한 코드를 제거할 수 있다.<br>
 람다 표현식은 코드 조각(또는 전략)을 캡슐화한다. 즉, 람다 표현식으로 전략 패턴을 대신할 수 있다.
 ### 템플릿 메서드
+템플릿 메서드는 알고리즘의 개요를 제시한 다음에 `알고리즘의 일부를 고칠 수 있는 유연함을 제공해야 할 때` 사용된다. 즉, `이 알고리즘을 사용하고 싶은데 그대로는 안되고 조금 수정해야 하는 상황에 적합`하다.<br>
 
+* ex.
+
+```java
+public abstract class OnlineBanking {
+    public void processCustomer(int id) {
+        Customer c = Database.getCustomerWithId(id);
+        makeCustomerHappy(c);
+    }
+
+    abstract void makerCustomerHappy(Customer c);
+}
+```
 ### 람다 표현식 사용
+```java
+public void processCustomer(int id, Consumer<Customer> makeCustomerHappy) {
+    Customer c = Database.getCustomerWithId(id);
+    makeCustomerHappy.accept(c);
+}
+
+new OnlineBankingLambda().processCustomer(1337, (Customer c) -> System.out.println("Hello " + c.getName()));
+```
 ## 옵저버
+옵저버 패턴은 어떤 이벤트가 발생했을 때, 한 객체(subject)가 다른 객체 리스트(observer)에 자동으로 알림을 보내야 하는 상황에 사용된다.
+![옵저버패턴](../../assets/img/java_observer_pattern.jpeg)
+
+* ex.
+
+![옵저버패턴](../../assets/img/java_o_pattern.jpeg)
+
+```java
+public interface Observer {
+    void notify(String tweet);
+}
+
+public class NYTimes implements Observer {
+    @Override
+    public void notify(String tweet) {
+        if (tweet != null && tweet.contains("money")) {
+            System.out.println("Breaking new in NY! " + tweet);
+        }
+    }
+}
+
+public class Guardian implements Observer {
+    @Override
+    public void notify(String tweet) {
+        if (tweet != null && tweet.contains("queen")) {
+            System.out.println("Yet another news in London... " + tweet);
+        }
+    }
+}
+
+public class LeMonde implements Observer {
+    @Override
+    public void notify(String tweet) {
+        if (tweet != null && tweet.contains("wine")) {
+            System.out.println("Today cheese, wine and news! " + tweet);
+        }
+    }
+}
+
+public interface Subject {
+    void registerObserver(Observer o);
+    void notifyObservers(String tweet);
+}
+
+public class Feed implements Subject {
+    private final List<Observer> observers = new ArrayList<>();
+
+    @Override
+    public void registerObserver(Observer o) {
+        this.observers.add(o);
+    }
+
+    @Override
+    public void notifyObservers(String tweet) {
+        observers.forEach(o -> o.notify(tweet));
+    }
+}
+
+    public static void main(String[] args) {
+
+        Feed f = new Feed();
+        f.registerObserver(new NYTimes());
+        f.registerObserver(new Guardian());
+        f.registerObserver(new LeMonde());
+
+        f.notifyObservers("The queen said her favourite book is Java 8 in Action!");
+    }
+```
+
+* result
+
+```text
+Yet another news in London... The queen said her favourite book is Java 8 in Action!
+```
 ### 람다 표현식 사용하기
+![옵저버패턴](../../assets/img/java_o1_pattern.jpeg)
+```java
+    public static void main(String[] args) {
+
+        Feed f = new Feed();
+        f.registerObserver((String tweet) -> {
+            if (tweet != null && tweet.contains("money")) {
+                System.out.println("Breaking new in NY! " + tweet);
+            }
+        });
+        f.registerObserver((String tweet) -> {
+            if (tweet != null && tweet.contains("queen")) {
+                System.out.println("Yet another news in London... " + tweet);
+            }
+        });
+        f.registerObserver((String tweet) -> {
+            if (tweet != null && tweet.contains("wine")) {
+                System.out.println("Today cheese, wine and news! " + tweet);
+            }
+        });
+
+        f.notifyObservers("The queen said her favourite book is Java 8 in Action!");
+    }
+```
+
+기존 3개의 옵저버를 명시적으로 인스턴스화 하지 않고 람다 표현식을 직접 전달해서 실행할 동작을 지정한다.
 ## 의무 체인
+의무 체인 패턴은 작업처리 객체의 체인(동작 체인 등)을 만들 때는 의무 체인 패턴을 사용한다.<br>
+한 객체가 어떤 작업을 처리한 다음에 다른 객체로 결과를 전달하고, 다른 객체도 해야 할 작업을 처리한 다음에 또 다른 객체로 전달하는 방식이다.<br>
+일반적으로 다음으로 처리할 객체 정보를 유지하는 필드를 포함하는 작업 처리 추상 클래스로 의무 체인 패턴을 구성한다. 작업 처리 객체가 자신의 작업을 끝냈으면 다음 작업처리 객체로 결과를 전달한다.
+
+![의무체인 패턴](../../assets/img/required_chain.jpeg)
+
+* ex.
+
+![의무체인 패턴](../../assets/img/required_chain1.jpeg)
+
+```java
+public abstract class ProcessingObject<T> {
+    protected ProcessingObject<T> successor;
+
+    public void setSuccessor(ProcessingObject<T> successor) {
+        this.successor = successor;
+    }
+
+    public T handle(T input) {
+        T r = handleWork(input);
+        if (successor != null) {
+            return successor.handle(r);
+        }
+        return r;
+    }
+
+    abstract protected T handleWork(T input);
+}
+
+public class HeaderTextProcessing extends ProcessingObject<String> {
+    @Override
+    protected String handleWork(String input) {
+        return "From Raoul, Mario and Alan: " + input;
+    }
+}
+
+public class SpellCheckerProcessing extends ProcessingObject<String> {
+    @Override
+    protected String handleWork(String input) {
+        return input.replaceAll("labda", "lambda");
+    }
+}
+
+    public static void main(String[] args) {
+
+        ProcessingObject<String> p1 = new HeaderTextProcessing();
+        ProcessingObject<String> p2 = new SpellCheckerProcessing();
+
+        p1.setSuccessor(p2);
+
+        String result = p1.handle("Aren't labdas really sexy?!!!");
+        System.out.println(result);
+    }
+```
+
+* result
+
+```text
+From Raoul, Mario and Alan: Aren't lambdas really sexy?!!!
+```
 ### 람다 표현식 사용
+작업처리 객체는 Function<String, String>, 즉 UnaryOperator<String> 형식의 인스턴스로 표현할 수 있다. `andThen 메서드로 이들 함수를 조합해서 체인을 만들 수 있다.`
+```java
+    public static void main(String[] args) {
+
+        UnaryOperator<String> headerTextProcessing = (String input) -> "From Raoul, Mario and Alan: " + input;
+        UnaryOperator<String> spellCheckerProcessing = (String input) -> input.replaceAll("labda", "lambda");
+
+        Function<String, String> pipeline = headerTextProcessing.andThen(spellCheckerProcessing);
+
+        String result = pipeline.apply("Aren't labdas really sexy?!!!");
+        System.out.println(result);
+    }
+```
+
+> 위처럼 람다 표현식을 활용함으로써 처음에 구현했던 ProcessingObject, HeaderTextProcessing, SpellCheckerProcessing 클래스는 생성할 필요가 없어진다.
+
 ## 팩토리
+팩토리 패턴은 인스턴스화 로직을 클라이언트에 노출하지 않고 객체를 만들 때 사용한다.
+
+* ex.
+
+```java
+public class ProductFactory {
+    public static Product createProduct(String name) {
+        switch (name) {
+            case "loan":
+                return new Loan();
+            case "stock":
+                return new Stock();
+            case "bond":
+                return new Bond();
+            default:
+                throw new RuntimeException("No such product " + name);
+        }
+    }
+}
+```
+
 ### 람다 표현식
+
+* 생성자도 메서드 레퍼런스처럼 접근할 수 있다.
+
+```java
+Supplier<Product> loanSupplier = Loan::new;
+Loan loan = loanSupplier.get();
+```
+
+* 상품명을 생성자로 연결하는 Map을 만들어서 코드를 재구현할 수 있다.
+
+```java
+final static Map<String, Supplier<Product>> map = new HashMap<>();
+static {
+    map.put("loan", Loan::new);
+    map.put("stock", Stock::new);
+    map.put("bond", Bond::new);
+}
+```
+
+* Map을 이용해서 팩토리 패턴에서 했던 것처럼 다양한 상품을 인스턴스화할 수 있다.
+
+```java
+public static Product createProduct(String name) {
+    Supplier<Product> p = map.get(name);
+    if(p != null) return p.get();
+    throw new IllegalArgumentException("No such product " + name);
+}
+```
+
+하지만, 팩토리 메서드 createProduct가 상품 생성자로 여러 인수를 전달하는 상황에서는 이 기법을 적용하기 어렵다. 단순한 Supplier 함수형 인터페이스로는 이 문제를 해결할 수 없다.<br>
+아래와 같이 3개의 인수를 받는 상품 생성자가 있다고 가정하면, TriFunction이라는 특별한 함수형 인터페이스를 만들어야 한다.
+```java
+public interface TriFunction<T, U, V, R> {
+    R apply(T t, U u, V v);
+}
+Map<String, TriFunction<Integer, Integer, String, Product>> map = new HashMap<>();
+```
+
+결국 위 처럼 Map의 시그니처가 복잡해진다.
 # 람다 테스팅
-## 보이는 람다 표현식의 동작 테스팅
 ## 람다를 사용하는 메서드의 동작에 집중하라
+람다의 목표는 `정해진 동작을 다른 메서드에서 사용할 수 있도록 하나의 조각으로 캡슐화하는 것`이다. 그러기 위해서는 세부 구현을 포함하는 람다 표현식을 공개하지 말아야 한다. 람다 표현식을 사용하는 메서드의 동작을 테스트함으로써 람다를 공개하지 않으면서도 람다 표현식을 검증할 수 있다.
 ## 복잡한 람다를 개별 메서드로 분할하기
+테스트 코드에서는 람다 표현식을 참조할 수 없다. 이 때 해결책으로는 `람다 표현식을 메서드 레퍼런스로 변경`하는 것이다.
 ## 고차원 함수 테스팅
+함수를 인수로 받거나 다른 함수를 반환하는 메서드(이를 고차원 함수라고 한다)는 좀 더 사용하기 어렵다. 메서드가 람다를 인수로 받는다면 다른 람다로 메서드의 동작을 테스트할 수 있다.
 # 디버깅
+람다 표현식과 스트림은 기존의 디버깅 기법을 무력화한다.
 ## 스택 트레이스 확인
+
 ### 람다와 스택 트레이스
 ## 정보 로깅
 # 요약
