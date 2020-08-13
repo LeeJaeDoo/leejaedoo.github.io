@@ -85,3 +85,5 @@ List<String> threeHighCaloricDishNames = menu.stream()                          
 * 스트림 파이프라인을 실행하고 결과를 만들 `최종 연산`
 
 스트림 파이프라인 개념은 빌더 패턴과 비슷하다.
+
+> 참고 [http://tcpschool.com/java/java_stream_intermediate](http://tcpschool.com/java/java_stream_intermediate)
