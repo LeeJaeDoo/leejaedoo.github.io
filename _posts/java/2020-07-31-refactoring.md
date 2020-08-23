@@ -562,7 +562,149 @@ Map<String, TriFunction<Integer, Integer, String, Product>> map = new HashMap<>(
 # 디버깅
 람다 표현식과 스트림은 기존의 디버깅 기법을 무력화한다.
 ## 스택 트레이스 확인
-
+프로그램이 메서드를 호출할 때마다 프로그램에서의 호출 위치, 호출할 때의 인수값, 호출된 메서드의 지역 변수 등을 포함한 호출 정보가 생성되며 이 정보들은 스택 프레임(Stack Frame)에 저장된다.<br>
+따라서 프로그램이 멈췄다면 어떻게 멈추게 되었는지 프레임별로 보여두는 스택 트레이스(Stack Trace)를 얻을 수 있다. 즉, 문제가 발생한 지점에 이르게 된 메서드 호출 리스트를 얻을 수 있다.
 ### 람다와 스택 트레이스
+하지만, 람다 표현식은 이름이 없기 때문에 복잡한 스택 트레이스가 생성된다.
+
+* 고의적으로 람다 내 에러를 발생시키는 코드 예
+
+```java
+package com.company;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Main {
+
+    public static void main(String[] args) {
+        List<Point> points = Arrays.asList(new Point(12, 2), null);
+        points.stream().map(p -> p.getX()).forEach(System.out::println);
+    }
+}
+
+```
+
+* 스택 트레이스
+
+```text
+12
+Exception in thread "main" java.lang.NullPointerException
+	at com.company.Main.lambda$main$0(Main.java:10)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:195)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:484)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:474)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:497)
+	at com.company.Main.main(Main.java:10)
+```
+
+의도대로 points 리스트의 두번째 인수로 null이 들어가면서 오류가 발생한다. 스트림 파이프라인에서 에러가 발생했으므로 스트림 파이프라인 작업과 관련된 전체 메서드 호출 리스트가 출력되었다.<br>
+
+메서드 레퍼런스를 사용해도 스택 트레이스에는 메서드명이 나타나지 않는다. 하지만, `메서드 레퍼런스를 사용하는 클래스와 같은 곳에 선언되어 있는 메서드를 참조할 때는 메서드 레퍼런스 이름이 스택 트레이스에 나타난다.`
+
+* 메서드 레퍼런스 사용하는 클래스와 같은 클래스에 선언된 메서드 참조하는 예제
+
+```java
+package com.company;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Main {
+
+    public static void main(String[] args) {
+        List<Integer> numbers = Arrays.asList(1, 2, 3);
+        numbers.stream().map(Main::divideByZero).forEach(System.out::println);
+    }
+
+    public static int divideByZero(int n) {
+        return n / 0;
+    }
+}
+
+```
+
+divideByZero 메서드는 스택 트레이스에 제대로 표시된다.
+
+* 스택 트레이스
+
+```text
+Exception in thread "main" java.lang.ArithmeticException: 
+	at com.company.Main.divideByZero(Main.java:15)      //  스택 트레이스에 divideByZero가 보인다.
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:195)
+	at java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:484)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:474)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:497)
+	at com.company.Main.main(Main.java:11)
+```
+
+따라서 람다 표현식과 관련한 스택 트레이스는 이해하기 어려울 수 있기 때문에 미래의 자바 컴파일러가 개선해야할 부분이다.
+
 ## 정보 로깅
+스트림의 파이프라인 연산을 디버깅할 때, forEach와 같은 스트림은 안타깝게도 호출하는 순간 전체 스트림이 소비되어 스트림 파이프라인에 적용된 각각의 연산이 어떤 결과를 도출하는지 확인이 어렵다.<br>
+이 때, peek이라는 스트림 연산을 활용하면 forEach와 달리 실제 스트림의 요소를 소비하지 않고, 자신이 확인한 요소를 파이프라인의 다음 연산으로 그대로 전달한다.
+
+* forEach 디버깅
+
+```java
+        List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5);
+        numbers.stream()
+               .map(x -> x + 17)
+               .filter(x -> x % 2 == 0)
+               .limit(3)
+               .forEach(System.out::println);
+```
+
+* peek 디버깅
+
+```java        
+        numbers.stream()
+               .peek(x -> System.out.println("from stream: " + x))  //  소스에서 처음 소비한 요소를 출력
+               .map(x -> x + 17)
+               .peek(x -> System.out.println("after map: " + x))    //  map 동작 실행 결과를 출력
+               .filter(x -> x % 2 == 0)
+               .peek(x -> System.out.println("after filter: " + x))
+               .limit(3)
+               .peek(x -> System.out.println("after limit: " + x))  //  limit 동작 후 선택된 숫자를 출력
+               .collect(Collectors.toList());
+```
+
+* peek 결과
+
+```text
+from stream: 1
+after map: 18
+after filter: 18
+after limit: 18
+from stream: 2
+after map: 19
+from stream: 3
+after map: 20
+after filter: 20
+after limit: 20
+from stream: 4
+after map: 21
+from stream: 5
+after map: 22
+after filter: 22
+after limit: 22
+```
+
+위와 같이 peek을 활용함으로써 각 파이프라인의 단계별 상태를 알 수 있다.
 # 요약
+* 람다 표현식으로 가독성이 좋고 더 유연한 코드를 만들 수 있다.
+* 익명 클래스는 람다 표현식으로 바꾸는 것이 좋지만, 이 때, this, 변수 섀도 등 미묘하게 의미상 다른 내용이 있음을 주의해야 한다. 메서드 레퍼런스로 람다 표현식보다 더 가독성이 좋은 코드를 구현할 수 있다.
+* 반복적으로 컬렉션을 처리하는 루틴은 스트림 API로 대체할 수 있을지 고려하는 것이 좋다.
+* 람다 표현식으로 전략, 템플릿 메서드, 옵저버, 의무 체인, 팩토리 등의 객체지향 디자인 패턴에서 발생하는 불필요한 코드를 제거할 수 있다.
+* 람다 표현식으로 단위 테스트를 수행할 수 있다. 하지만 람다 표현식 자체를 테스트하는 것보다는 람다 표현식이 사용되는 메서드의 동작을 테스트하는 것이 바람직하다.
+* 복잡한 람다 표현식은 일반 메서드로 재구현할 수 있다.
+* 람다 표현식을 사용하면 스택 트레이스를 이해하기 어려워진다.
+* 스트림 파이프라인에서 요소를 처리할 때 peek 메서드로 중간값을 확인할 수 있다.
