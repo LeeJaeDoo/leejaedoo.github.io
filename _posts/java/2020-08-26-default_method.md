@@ -78,6 +78,7 @@ com/company/Ellipse.java:6: error: Ellipse is not abstract and does not override
 > 추상 클래스와 인터페이스의 차이는 무엇일까? 둘 다 추상 메서드와 바디를 포함하는 메서드를 정의할 수 있다.
 >  * 클래스는 하나의 추상 클래스만 상속받을 수 있지만, 인터페이스는 여러 개 구현할 수 있다.
 >  * 추상 클래스는 인스턴스 변수(필드)로 공통 상태를 가질 수 있지만, 인터페이스는 인스턴스 변수를 가질 수 없다. 
+
 # 디폴트 메서드 활용 패턴
 우리가 만드는 인터페이스에도 디폴트 메서드를 추가할 수 있다. 디폴트 메서드를 이용하는 방식으로 `선택형 메서드(optional method)`와 `동작 다중 상속(multiple inheritance of behavior)` 두 가지가 있다.
 ## 선택형 메서드
