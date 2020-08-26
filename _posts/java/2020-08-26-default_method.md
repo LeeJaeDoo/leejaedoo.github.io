@@ -112,7 +112,9 @@ ArrayList는 한 개의 클래스를 상속받고, 여러 개의 인터페이스
 1. 클래스가 항상 우선이다. 클래스나 슈퍼클래스에서 정의한 메서드가 디폴트 메서드보다 우선권을 갖는다.
 2. 클래스나 슈퍼클래스에서 메서드 정의가 없을 때는 디폴트 메서드를 정의하는 서브 인터페이스가 선택된다.
 3. 인터페이스 간의 우선순위가 없다면 여러 인터페이스를 상속받는 클래스가 명시적으로 디폴트 메서드를 오버라이드하고 호출해야 한다.
+
 ## 충돌 그리고 명시적인 문제 해결
+
 ```java
 public interface A {
     default void hello() {
@@ -128,9 +130,11 @@ public interface B {
 
 public class C implements B, A {}
 ```
+
 위 3번과 같이 인터페이스 간의 우선순위가 없는 채로 인터페이스를 구현한다면 자바 컴파일러는 `Error: class C inherits unrelated defaults for hello() from types B and A.`같은 에러가 발생한다. 
 ### 충돌 해결
 위와 같은 경우 해결방법은 `개발자가 직접 클래스 C에서 사용하려는 메서드를 명시적으로 선택`해야 한다. 즉, 클래스 C에서 hello 메서드를 오버라이드한 다음 호출하려는 메서드를 명시적으로 선택해야 한다.(ex. X.super.m(...))
+
 ```java
 pubic class C implements B, A {
     void hello() {
@@ -138,6 +142,7 @@ pubic class C implements B, A {
     }
 }
 ```
+
 # 요약
 * 자바 8의 인터페이스는 구현 코드를 포함하는 디폴트 메서드, 정적 메서드를 정의할 수 있다.
 * 디폴트 메서드의 정의는 default 키워드로 시작하며 일반 클래스 메서드처럼 바디를 갖는다.
