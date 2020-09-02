@@ -70,7 +70,115 @@ Stream과 CompletableFuture는 비슷한 패턴, 즉 람다 표현식과 파이�
 > 반면 `비동기 API`에서는 메서드가 즉시 반환되며 끝내지 못한 나머지 작업을 호출자 스레드와 동기적으로 실행될 수 있도록 다른 스레드에 할당한다. 이와 같은 상황은 `비블록 호출(non-blocking call)`이라고 한다. 다른 스레드에 할당된 나머지 계산 결과는 콜백 메서드를 호출해서 전달하거나 호출자가 '계산 결과가 끝날 때까지 기다림' 메서드를 추가로 호출하면서 전달된다. 주로 I/O 시스템 프로그래밍에서 이와 같은 방식으로 동작을 수행한다. 즉, 계산 동작을 수행하는 동안 비동기적으로 디스크 접근을 수행한다. 그리고 더 이상 수행할 동작이 없으면 디스크 블록이 메모리로 로딩될 때까지 기다린다.
 # 비동기 API 구현
 ## 동기 메서드를 비동기 메서드로 변환
+
+* 비동기 메서드 getPriceAsync 구현
+
+```java
+    public Future<Double> getPriceAsync(String product) {
+        CompletableFuture<Double> futurePrice = new CompletableFuture<>();  //  계산 결과를 포함할 CompletableFuture를 생성
+        new Thread(() -> {
+            double price = calculatePrice(product); //  다른 스레드에서 비동기적으로 계산을 수행
+            futurePrice.complete(price);    //  오랜 시간이 걸리는 계산이 완료되면 Future에 값을 설정
+        }).start();
+        return futurePrice; //  계산 결과가 완료되길 기다리지 않고 Future를 반환
+    }
+```
+
+* 비동기 API 사용
+
+```java
+	    Shop shop = new Shop("BestShop");
+	    long start = System.nanoTime();
+        Future<Double> futurePrice = shop.getPriceAsync("my favorite product"); //  상점에 제품가격 정보 요청
+        long invocationTime = ((System.nanoTime() - start) / 1_000_000);
+        System.out.println("Invocation returned after " + invocationTime);
+
+        doSomethingElse();
+        try {
+            double price = futurePrice.get();   //  가격 정보가 있으면 Future에서 가격 정보를 읽고, 가격 정보가 없으면 가격 정보를 받을 때까지 블록한다.
+            System.out.printf("Price is %.2f%n", price);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        long retrievalTime = ((System.nanoTime() - start) / 1_000_000);
+        System.out.println("Price returned after " + retrievalTime + " msecs");
+```
+
+클라이언트는 특정 제품의 가격 정보를 상점에 요청 한다.<br>
+상점은 비동기 API를 제공하므로 즉시 Future(영수증)를 반환한다. 클라이언트는 반환된 Future를 이용해서 `나중에 결과를 얻을 수 있다.`<br>
+그 사이 클라이언트는 다른 상점에 가격 정보를 요청하는 등 첫 번째 상점의 결과를 기다리면서 대기하지 않고 다른 작업을 처리할 수 있다.<br>
+나중에 클라이언트가 특별히 할 일이 없으면 Future의 get 메서드를 호출한다. 이 때 Future가 결과 값을 갖고 있다면 Future에 포함된 값을 읽거나 아니라면 `값이 계산될 때까지 블록`한다.
+
+* 결과
+
+```text
+Invocation returned after 7
+Price is 126.81
+Price returned after 1057 msecs
+```
+
+가격 계산이 끝나기 전에 getPriceAsync가 반환된다.
+
 ## 에러 처리 방법
+위에서 본 코드에는 문제가 없지만 가격을 계산하는 동안 에러가 발생할 수 있다.<br>
+가격 계산에 에러가 발생한다면 해당 스레드에만 영향을 미치게 되고 즉, 에러가 발생해도 가격 계산은 계속 진행되기 때문에 일의 순서가 꼬이게 된다. 결과적으로 클라이언트는 get 메서드가 반환될 때까지 영원히 기다리게 될 수도 있다.<br>
+
+클라이언트는 타임아웃값을 받는 get 메서드의 오버로드 버전을 만들어 이 문제를 해결할 수 있다. 이와 같이 블록 문제는 타임아웃을 활용하여 타임아웃 시간이 지나면 `TimeoutException`을 받을 수 있다.<br>
+하지만, 이때 제품가격 계산에 왜 에러가 발생했는지 알 수 있는 방법이 없다. 따라서 completeExceptionally 메서드를 이용해서 CompletableFuture 내부에서 발생한 예외를 클라잉언트로 전달해야 한다.
+
+* CompletableFuture 내부에서 발생한 에러 전파
+
+```java
+    public Future<Double> getPriceAsync(String product) {
+        CompletableFuture<Double> futurePrice = new CompletableFuture<>();
+        new Thread(() -> {
+            try {
+                double price = calculatePrice(product);
+                futurePrice.complete(price);    //  계산이 정상적으로 종료되면 Future에 가격 정보를 저장한 채로 Future를 종료
+            } catch (Exception ex) {
+                futurePrice.completeExceptionally(ex);  //  도중에 문제가 발생하면 발생한 에러를 포함시켜 Future를 종료
+            }
+        }).start();
+        return futurePrice;
+    }
+```
+
+이제 클라이언트는 가격 계산 메서드에서 발생한 예외 파라미터를 포함하는 ExecutionException을 받게 된다.
+### 팩토리 메서드 supplyAsync로 CompletableFuture 만들기
+지금까지는 CompletableFuture를 직접 구현했지만 더 간단히 구현할 수 있다.
+
+* 팩토리 메서드 supplyAsync로 CompletableFuture 만들기
+
+```java
+public Future<Double> getPriceAsync(String product) {
+    return CompletableFuture.supplyAsync(() -> calculatePrice(product));
+}
+```
+
+supplyAsync 메서드는 Supplier를 인수로 받아서 CompletableFuture를 반환한다.
+
+* CompletableFuture 클래스 내 일반 supplyAsync 메서드와 오버로드 버전의 supplyAsync 메서드
+
+```java
+public class CompletableFuture<T> implements Future<T>, CompletionStage<T> {
+
+    private static final Executor ASYNC_POOL;
+
+    public static <U> CompletableFuture<U> supplyAsync(Supplier<U> supplier) {
+        return asyncSupplyStage(ASYNC_POOL, supplier);
+    }
+
+    public static <U> CompletableFuture<U> supplyAsync(Supplier<U> supplier, Executor executor) {
+        return asyncSupplyStage(screenExecutor(executor), supplier);
+    }
+}
+```
+
+CompletableFuture는 Supplier를 실행해서 비동기적으로 결과를 생성한다. ForkJoinPool의 Executor 중 하나가 Supplier를 실행한다.<br>
+하지만 두 번째 인수를 받는 오버로드 버전의 supplyAsync 메서드를 이용해서 다른 Executor를 지정할 수도 있다.<br>
+결국, 모든 다른 CompletableFuture의 팩토리 메서드에 Executor를 선택적으로 전달할 수 있다.
+
 # 비블록 코드 만들기
 ## 병렬 스트림으로 요청 병렬화하기
 ## CompletableFuture로 비동기 호출 구현하기
