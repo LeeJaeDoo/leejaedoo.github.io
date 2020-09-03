@@ -180,10 +180,173 @@ CompletableFuture는 Supplier를 실행해서 비동기적으로 결과를 생�
 결국, 모든 다른 CompletableFuture의 팩토리 메서드에 Executor를 선택적으로 전달할 수 있다.
 
 # 비블록 코드 만들기
+
+* 순차적으로 정보를 요청하는 findPrices 메서드 구현
+
+```java
+    private static List<Shop> shops = Arrays.asList(new Shop("BestPrice"),
+                                     new Shop("LetsSaveBig"),
+                                     new Shop("MyFavoriteShop"),
+                                     new Shop("BuyItAll"));
+
+    public static List<String> findPrices(String product) {
+        return shops.stream()
+                    .map(shop -> String.format("%s price is %.2f", shop.getName(), shop.getPrice(product)))
+                    .collect(Collectors.toList());
+    }
+```
+
+* 결과
+
+```text
+[BestPrice price is 180.14, LetsSaveBig price is 208.68, MyFavoriteShop price is 193.84, BuyItAll price is 176.47]
+Done in 4042 msecs
+```
+
+4개의 shops에서 가격을 검색할 동안 각각 1초의 delay()가 있기 때문에 전체 가격 검색 결과는 4초를 살짝 넘게된다.<br>
+이제 이를 병렬 스트림을 통해 개선해본다.
+
 ## 병렬 스트림으로 요청 병렬화하기
+
+* findPrices 메서드 병렬화
+
+```java
+    public static List<String> findPrices(String product) {
+        return shops.parallelStream()
+                    .map(shop -> String.format("%s price is %.2f", shop.getName(), shop.getPrice(product)))
+                    .collect(Collectors.toList());
+    }
+```
+
+* 결과
+
+```text
+[BestPrice price is 216.54, LetsSaveBig price is 212.58, MyFavoriteShop price is 172.98, BuyItAll price is 127.70]
+Done in 1028 msecs
+```
+4개의 상점이 병렬로 검색되면서 1번의 delay()가 소요된 것처럼 1초가 살짝 넘는 결과가 나오게 된다.<br>
+이를 CompletableFuture 기능을 활용하여 **findPrices 메서드의 동기 호출을 비동기 호출로 개선**해본다.
+
 ## CompletableFuture로 비동기 호출 구현하기
+
+* CompletableFuture로 findPrices 구현
+
+```java
+    public static List<CompletableFuture<String>> completableFuturefindPrices(String product) {
+        List<CompletableFuture<String>> priceFutures
+            = shops.stream()
+                   .map(shop -> CompletableFuture.supplyAsync(
+                       () -> String.format("%s price is %.2f", shop.getName(), shop.getPrice(product))))
+                   .collect(Collectors.toList());
+        return priceFutures;
+    }
+```
+
+* 결과
+
+```text
+[java.util.concurrent.CompletableFuture@b684286[Not completed], java.util.concurrent.CompletableFuture@880ec60[Not completed], java.util.concurrent.CompletableFuture@3f3afe78[Not completed], java.util.concurrent.CompletableFuture@7f63425a[Not completed]]
+Done in 12 msecs
+```
+
+리스트의 CompletableFuture는 각각 계산 결과가 끝난 상점의 이름 문자열을 포함한다. 하지만 우리가 재구현하는 findPrices 메서드의 반환 형식은 List<String>이므로 모든 CompletableFuture의 동작이 완료되고 결과를 추출한 다음 리스트를 반환해야 한다.<br>
+두 번째 map 연산을 List<CompletableFuture<String>>에 적용할 수 있다. CompletableFuture클래스에 join 메서드는 Future 인터페이스의 get 메서드와 같은 의미로, join을 호출하여 모든 동작이 끝나길 기다린다.<br>
+다만 join은 아무 예외도 발생시키지 않는다. 따라서 try/catch로 감쌀 필요가 없다.
+
+* CompletableFuture로 findPrices 재구현
+
+```java
+    public static List<String> completableFuturefindPrices(String product) {
+        List<CompletableFuture<String>> priceFutures
+            = shops.stream()
+                   .map(shop -> CompletableFuture.supplyAsync(
+                       () -> shop.getName() + " price is " + shop.getPrice(product)))
+                   .collect(Collectors.toList());
+
+        return priceFutures.stream()
+            .map(CompletableFuture::join)
+            .collect(Collectors.toList());
+    }
+```
+
+* 결과
+
+```text
+[BestPrice price is 139.55682959276808, LetsSaveBig price is 159.9332914058537, MyFavoriteShop price is 135.62605596893522, BuyItAll price is 132.06995934518]
+Done in 1059 msecs
+```
+
+두 map 연산을 하나의 스트림 처리 파이프라인으로 처리하지 않고, 두 개의 스트림 파이프라인으로 처리했다. 왜냐하면 스트림 연산은 게으른 특성이 있으므로 하나의 파이프라인으로 연산을 처리했다면 모든 가격 정보 요청 동작이 동기적, 순차적으로 이뤄지기 때문이다.<br>
+즉, CompletableFuture로 각 상점의 정보를 요청할 때, 기존 요청 작업이 완료되어야 join이 결과를 반환하면서 다음 상점으로 정보를 요청할 수 있기 때문이다.
+
+![스트림의 게으름 때문에 순차 계산이 일어나는 이유와 이를 회피하는 법](../../assets/img/steam_lazy.jpg)
+윗 부분은 순차 계산인 단일 파이프라인 스트림 처리과정이고, 아래는 CompletableFuture를 리스트로 모은 후 다른 작업과 독립적으로 각자의 작업을 수행하는 모습이다.<br>
+결과는 만족할 수 없는 성능을 보여주고 있다.<br>
+이러한 결과가 나오게 된 이유는 기기가 4개의 스레드를 병렬로 실행할 수 있는 기기라는 점이라는 것을 먼저 생각해 봐야 한다.
+
 ## 더 확장성이 좋은 해결 방법
+위 병렬 스트림 버전에서는 4개의 상점을 검색하느라 4개의 모든 스레드가 사용된 상황이므로 **다섯 번째 상점을 처리하게 될 때** 추가로 1초 이상이 소요되게 된다. 즉, 4개의 스레드 중 어떠한 스레드가 먼저 작업이 완료되어야 다섯 번째 스레드가 동작될 수 있다.<br>
+CompletableFuture 버전에서는 이러한 상황에서 성능의 효과를 볼 수 있다. CompletableFuture는 병렬 스트림 버전에 비해 작업에 이용할 수 있는 다양한 Executor를 지정할 수 있다는 장점이 있다.<br>
+따라서 Executor로 스레드 풀의 크기를 조절하는 등 애플리케이션에 맞는 최적화된 설정을 만들 수 있다.  
 ## 커스텀 Executor 사용하기
+우리가 작업하는 애플리케이션에 필요한 작업량을 고려한 풀에서 관리하는 스레드 수에 맞게 Executor를 만들 수 있다.
+
+> #### 스레드 풀 크기 조절
+> 스레드 풀이 너무 크면, CPU와 메모리 자원을 서로 경쟁하느라 시간을 낭비할 수 있다.<br>
+> 스레드 풀이 너무 작다면, CPU의 일부 코어는 활용되지 않을 수 있다. 이 때, 다음과 같은 공식을 통해 대략적인 CPU 활용 비율을 계산할 수 있다.<br>
+> `N(threads) = N(cpu) * U(cpu) * (1 + W/C)`<br>
+> N(cpu) : Runtime.getRuntime().availableProcesstors()가 반환하는 코어 수
+> U(cpu) : 0과 1 사이의 값을 갖는 CPU 활용 비율
+> W/C : 대기시간과 계산시간의 비율
+
+* 우리 애플리케이션에 맞는 커스텀 Executor
+
+```java
+    private final Executor executor = Executors.newFixedThreadPool(Math.min(shops.size(), 100), //  상점 수만큼의 스레드를 갖는 풀을 생성.(스레드 수의 범위는 0 ~ 100)
+                                                                   new ThreadFactory() {
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            Thread t = new Thread(runnable);
+            t.setDaemon(true);      //  프로그램 종료를 방해하지 않는 데몬 스레드를 사용
+            return t;
+        }
+    });
+```
+
+우리가 만드는 풀은 `데몬 스레드(daemon thread)`를 포함한다.<br>
+자바에서 일반 스레드가 실행 중이면 자바 프로그램은 종료되지 않는다. 따라서 어떤 이벤트가 한없이 기다리면서 종료되지 않는 일반 스레드가 있다면 문제가 될 수 있다.<br>
+반면 데몬 스레드는 자바 프로그램이 종료될 때 강제로 함께 종료될 수 있다.<br>
+두 스레드의 성능은 같다. 이제 새로운 Executor를 팩토리 메서드 supplyAsync의 두 번째 인수로 전달할 수 있다.
+
+* 위 CompletableFuture로 findPrices 재구현한 메서드에 커스텀 executor 적용 예시
+
+```java
+    public static List<String> completableFuturefindPrices(String product) {
+        List<CompletableFuture<String>> priceFutures
+            = shops.stream()
+                   .map(shop -> CompletableFuture.supplyAsync(
+                       () -> shop.getName() + " price is " + shop.getPrice(product), executor))
+                   .collect(Collectors.toList());
+
+        return priceFutures.stream()
+            .map(CompletableFuture::join)
+            .collect(Collectors.toList());
+    }
+```
+
+4 ~ 5개 상점이 아닌 4~500개 되는 상점에서 비동기 동작을 많이 사용하는 상황이라면 위와 같이 CompletableFuture에 커스텀한 executor를 활용하는 방법이 가장 효과적인 방법이 될 수 있다.
+
+> #### 스트림 병렬화와 CompletableFuture 병렬화
+> 지금까지 컬렉션을 병렬화하는 방법 두 가지를 알아보았다.
+> * 병렬 스트림으로 변환해서 컬렉션을 처리하는 방법
+> * 컬렉션을 반복하면서 CompletableFuture 내부의 연산으로 만드는 방법
+>
+> 여기서 CompletableFuture를 이용하면 전체적인 계산이 블록되지 않도록 스레드 풀의 크기르 조절할 수 있다.<br>
+> 다음을 참고하면 어떤 병렬화 기법을 사용해야할지 선택해야 할때 도움이 된다.
+> * `I/O가 포함되지 않은 계산 중심의 동작`을 실행할 때는 `스트림 인터페이스`가 가장 구현하기 간단하며 효율적일 수 있다.(모든 스레드가 계산 작업을 수행하는 상황에서는 프로세서 코어 수 이상의 스레드를 가질 필요가 없다.)
+> * 반면, 작업이 `I/O를 기다리는 작업을 병렬`로 실행할 때는 `CompletableFuture`가 더 많은 유연성을 제공하며 대기/계산(W/C)의 비율에 적합한 스레드 수를 설정할 수 있다. 특히, 스트림의 게으른 특성 때문에 스트림에서 I/O를 실제로 언제 처리할 지 예측하기 어려운 문제도 있다.
+
 # 비동기 작업 파이프라인 만들기
 ## 할인 서비스 구현
 ## 할인 서비스 사용
