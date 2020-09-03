@@ -348,9 +348,159 @@ CompletableFuture 버전에서는 이러한 상황에서 성능의 효과를 볼
 > * 반면, 작업이 `I/O를 기다리는 작업을 병렬`로 실행할 때는 `CompletableFuture`가 더 많은 유연성을 제공하며 대기/계산(W/C)의 비율에 적합한 스레드 수를 설정할 수 있다. 특히, 스트림의 게으른 특성 때문에 스트림에서 I/O를 실제로 언제 처리할 지 예측하기 어려운 문제도 있다.
 
 # 비동기 작업 파이프라인 만들기
+
+* enum으로 할인 코드 정의
+
+```java
+package com.company;
+
+import static com.company.Shop.delay;
+import static java.lang.String.format;
+
+public class Discount {
+    public enum Code {
+        NONE(0), SILVER(5), GOLD(10), PLATINUM(15), DIAMOND(20);
+
+        private final int percentage;
+
+        Code(int percentage) {
+            this.percentage = percentage;
+        }
+    }
+
+    public static String applyDiscount(Quote quote) {
+        return quote.getShopName() + " price is " +
+               Discount.apply(quote.getPrice(), //  기존 가격에 할인 코드를 적용
+                              quote.getDiscountCode());
+    }
+
+    private static String apply(double price, Code code) {
+        delay();    //  위에서 구현했던 응답 지연을 흉내냄
+        return format(String.valueOf(price * (100 - code.percentage) / 100));
+    }
+
+}
+```
+
 ## 할인 서비스 구현
+
+* 문자열 파싱 구현
+
+```java
+package com.company;
+
+public class Quote {
+    private final String shopName;
+    private final double price;
+    private final Discount.Code discountCode;
+
+    public Quote(String shopName, double price, Discount.Code discountCode) {
+        this.shopName = shopName;
+        this.price = price;
+        this.discountCode = discountCode;
+    }
+
+    public static Quote parse(String s) {
+        String [] split = s.split(":");
+        String shopName = split[0];
+        double price = Double.parseDouble(split[1]);
+        Discount.Code discountCode = Discount.Code.valueOf(split[2]);
+        return new Quote(shopName, price, discountCode);
+    }
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public Discount.Code getDiscountCode() {
+        return discountCode;
+    }
+}
+```
+
 ## 할인 서비스 사용
+
+* 순차적 동기 방식으로 findPrices 메서드 구현
+
+```java
+    public static List<String> findPrices(String product) {
+        return shops.stream()
+                    .map(shop -> shop.getPrice(product))    //  각 상점에서 할인 전 가격 얻기
+                    .map(Quote::parse)                      //  상점에서 반환된 문자열을 Quote 객체로 변환
+                    .map(Discount::applyDiscount)           //  Discount 서비스를 이용해서 각 Quote에 할인을 적용
+                    .collect(Collectors.toList());
+    }
+```
+
+* 결과
+
+```text
+[BestPrice price is 204.642, LetsSaveBig price is 189.7, MyFavoriteShop price is 115.13599999999998, BuyItAll price is 131.309, ShopEasy price is 166.472]
+Done in 10078 msecs
+```
+역시 가격 정보 요청에 5초, 할인 서비스 적용에 5초 약 10초가 소요된다.<br>
+병렬 스트림을 적용하면 성능은 쉽게 개선되겠지만, 스트림이 사용하는 스레드 풀의 크기가 고정되어 있어 상점 수가 늘어났을 때처럼 검색 대상이 확장되었을 때 유연하게 대응할 수 없다.<br>
+따라서 다시한번 얘기하지만 CompletableFuture에서 수행하는 태스크를 설정할 수 있는 커스텀 Executor를 정의함으로써 CPU 사용을 극대화 할 수 있다.
+
 ## 동기 작업과 비동기 작업 조합하기
+
+* CompletableFuture을 활용하여 비동기적으로 findPrices 재구현
+
+```java
+    public static List<String> completableFuturefindPrices(String product) {
+        List<CompletableFuture<String>> priceFutures
+            = shops.stream()
+                   .map(shop -> CompletableFuture.supplyAsync(  //  각 상점에서 할인 전 가격을 비동기적으로 얻는다.
+                       () -> shop.getPrice(product), executor))
+                   .map(future -> future.thenApply(Quote::parse))   // 상점에서 반환한 문자열을 Quote 객체로 변환
+                   .map(future -> future.thenCompose(quote ->   //  결과 Future를 다른 비동기 작업과 조합해서 할인 코드를 적용
+                       CompletableFuture.supplyAsync(
+                           () -> Discount.applyDiscount(quote), executor)))
+                   .collect(Collectors.toList());
+
+        return priceFutures.stream()
+                           .map(CompletableFuture::join)    //  스트림의 모든 Future가 종료되길 기다렸다가 각각의 결과를 추출
+                           .collect(Collectors.toList());
+    }
+```
+
+* 결과
+
+```text
+[BestPrice price is 165.41400000000002, LetsSaveBig price is 127.8, MyFavoriteShop price is 172.9855, BuyItAll price is 196.95399999999998, ShopEasy price is 148.014]
+Done in 2091 msecs
+```
+
+![동기 작업과 비동기 작업 조합하기](../../assets/img/executor.jpg)
+
+3개의 map연산을 적용하여 3개의 연산을 비동기로 실행한다.
+### 가격 정보 얻기
+첫 번째 연산은 팩토리 메서드 supplyAsync에 람다 표현식을 전달하여 비동기적으로 상점에서 가격 정보를 조회해온다.<br>
+첫 번째 변환 결과는 `Stream<CompletableFuture<String>>`이다. 각 CompletableFuture는 작업이 끝났을 때 해당 상점에서 반환하는 문자열 정보를 포함한다. 그리고 커스텀 Executor로 CompletableFuture를 설정한다.
+### Quote 파싱하기
+두 번째 변환 과정에서는 첫 번째 결과 문자열을 Quote로 변환한다.<br>
+파싱 과정에서는 원격 서비스나 I/O처리가 없으므로 원하는 즉시 지연없이 동작을 수행할 수 있다. 따라서 첫 번째 과정에서 생성된 CompletableFuture에 `thenApply 메서드`를 호출한 다음에 문자열을 Quote 인스턴스로 변환하는 `Function`으로 전달한다.<br>
+thenApply 메서드는 CompletableFuture가 끝날 때까지 블록하지 않는다는 점을 주의해야 한다. 즉, CompletableFuture가 동작을 완전히 완료한 다음에 thenApply 메서드로 전달된 람다 표현식을 적용할 수 있다.<br>
+따라서 CompletableFuture<String>을 CompletableFuture<Quote>로 변환할 것이다.
+### CompletableFuture 조합하여 할인된 가격 계산하기
+세 번째 연산에서는 원격 실행이 포함되므로 이전 두 변환과 다르며 동기적으로 작업을 수행해야 한다.(여기서는 1초의 지연(delay())으로 원격 실행을 흉내낸다.)<br>
+람다 표현식으로 이 동작을 팩토리 메서드 supplyAsync에 전달할 수 있다. 그러면 다른 CompletableFuture가 반환된다. 결국 두 가지 CompletableFuture로 이뤄진 연쇄적으로 수행되는 두 개의 비동기 동작을 만들 수 있다.
+* 문자열 Quote 변환 작업
+* 변환된 Quote를 Discount 서비스로 전달하여 할인된 최종가격 획득 작업
+
+자바 8의 CompletableFuture API는 이 두 비동기 연산을 하나의 파이프라인으로 만들 수 있도록 `thenCompose 메서드`를 제공한다. `thenCompose 메서드는 첫 번째 연산의 결과를 두 번째 연산으로 전달`한다.<br>
+즉, 첫 번째 CompletableFuture에 thenCompose 메서드를 호출하고 Function에 넘겨주는 식으로 두 CompletableFuture를 조합할 수 있다. Function은 첫 번째 CompletableFuture 반환 결과를 인수로 받고 두 번째 CompletableFuture를 반환하는데, 두 번째 CompletableFuture는 첫 번째 CompletableFuture의 결과를 계산의 입력으로 사용한다.<br>
+따라서 Future가 여러 상점에서 Quote를 얻는 동안 메인 스레드는 UI 이벤트에 반응하는 등 유용한 작업을 수행할 수 있다.<br>
+
+3개의 map 연산 결과 스트림의 요소를 리스트로 수집하면 List<CompletableFuture<String>> 형식의 자료를 얻을 수 있다.<br>
+마지막으로 CompletableFuture가 완료되기를 기다렸다가 join으로 값을 추출할 수 있다.<br>
+
+thenCompose 메서드도 다른 CompletableFuture 클래스의 메서드들과 같이 Aysnc로 끝나는 버전이 존재하는데, `Async로 끝나지 않는 메서드`는 `이전 작업을 수행한 스레드와 같은 스레드에서 작업을 실행함`을 의미하며(동기) `Async로 끝나는 메서드`는 `다음 작업이 다른 스레드에서 실행되도록 스레드 풀로 작업을 제출`한다.<br>
+위에서는 두 번째 CompletableFuture의 결과는 첫 번째 CompletableFuture에 의존하므로 두 CompletableFuture를 하나로 조합하든 Async버전으로 분리하든 최종 결과나 성능에 영향을 미치지 않는다. 따라서 스레드 전환 오버헤드가 적고 효율성이 더 좋은 thenCompose를 사용하였다. 
 ## 독립 CompletableFuture와 비독립 CompletableFuture 합치기
 ## Future의 리플렉션과 CompletableFuture의 리플렉션
 # CompletableFuture의 종료에 대응하는 방법
