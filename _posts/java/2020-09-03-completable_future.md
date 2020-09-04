@@ -2,8 +2,8 @@
 date: 2020-09-03 15:40:40
 layout: post
 title: 자바 8 인 액션
-subtitle: 11. CompletableFuture: 조합할 수 있는 비동기 프로그래밍
-description: 11. CompletableFuture: 조합할 수 있는 비동기 프로그래밍
+subtitle: 11. CompletableFuture 조합할 수 있는 비동기 프로그래밍
+description: 11. CompletableFuture 조합할 수 있는 비동기 프로그래밍
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
 category: java
