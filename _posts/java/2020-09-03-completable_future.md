@@ -502,8 +502,141 @@ thenApply 메서드는 CompletableFuture가 끝날 때까지 블록하지 않는
 thenCompose 메서드도 다른 CompletableFuture 클래스의 메서드들과 같이 Aysnc로 끝나는 버전이 존재하는데, `Async로 끝나지 않는 메서드`는 `이전 작업을 수행한 스레드와 같은 스레드에서 작업을 실행함`을 의미하며(동기) `Async로 끝나는 메서드`는 `다음 작업이 다른 스레드에서 실행되도록 스레드 풀로 작업을 제출`한다.<br>
 위에서는 두 번째 CompletableFuture의 결과는 첫 번째 CompletableFuture에 의존하므로 두 CompletableFuture를 하나로 조합하든 Async버전으로 분리하든 최종 결과나 성능에 영향을 미치지 않는다. 따라서 스레드 전환 오버헤드가 적고 효율성이 더 좋은 thenCompose를 사용하였다. 
 ## 독립 CompletableFuture와 비독립 CompletableFuture 합치기
+위에서 봤던 것 처럼 첫 번째 CompletableFuture에 thenCompose 메서드를 실행하여 첫 번째 실행 결과 값을 받은 후 두 번째 CompletableFuture로 전달해야 하는 상황이 아닌, 첫 번째 CompletableFuture의 동작 완료와 관계없이 두 번째 CompletableFuture를 실행해야 할 때 `thenCombine 메서드`를 사용한다.<br>
+`thenCombine 메서드`는 BiFunction을 두 번째 인수로 받는다. BiFunction은 두 개의 CompletableFuture 결과를 어떻게 합칠지 정의한다. thenCompose와 마찬가지로 thenCombine도 Async 버전이 존재한다. thenCombineAsync 메서드에서는 BiFunction이 정의하는 조합 동작이 스레드 풀로 제출되면서 별도의 태스크에서 비동기적으로 수행된다.<br>
+
+* 독립적인 두 개의 CompletableFuture 합치기
+
+```java
+        Future<Double> futurePriceInUSD = 
+            CompletableFuture.supplyAsync(() -> shop.getPrice(product)) //  제품가격 정보를 요청하는 첫 번째 태스크를 생성
+            .thenCombine(
+                CompletableFuture.supplyAsync(
+                    () -> exchangeService.getRate(Money.EUR, Money.USD)),   //  USD, EUR의 환율 정보를 요청하는 독립적인 두 번째 태스크를 생성
+                (price, rate) -> price * rate   //  두 결과를 곱해서 가격과 환율 정보를 합친다.
+            );
+``` 
+![독립적인 두 개의 비동기 태스크 합치기](../../assets/img/combine_async_task.jpg)
+여기서 합치는 연산은 단순한 곱셈이므로 별도의 태스크에서 수행하여 자원을 낭비할 필요가 없다. 따라서 thenCombineAsync 대신 thenCombine 메서드를 사용한다.
 ## Future의 리플렉션과 CompletableFuture의 리플렉션
+자바 8의 CompletableFuture는 이전 Future와 비교했을 때, 람다 표현식을 사용함으로써 다양한 동기/비동기 태스크를 활용하여 복잡한 연산 수행 방법을 효과적으로 쉽게 정의할 수 있는 선언형 API를 만들 수 있다. 또한 코드 가독성도 좋아졌다.<br>
+
+* 자바 7으로 두 Future 합치기
+
+```java
+ExecutorService executor = Executor.newCachedThreadPool();  //  태스크를 스레드 풀에 제출할 수 있도록 ExecutorService를 생성
+final Future<Double> futureRate = executor.submit(new Callable<Double>() {
+    public Double call() {
+        return exchangeService.getRate(Money.EUR, Money.USD);   //  EUR, USD 환율 정보를 가져올 Future를 생성
+    }
+});
+Future<Double> futurePriceInUSD = executor.submit({
+    public Double call() {
+        double priceInEUR = shop.getPrice(product); //  두 번째 future로 상점에서 요청 제품의 가격을 검색
+        return priceInEUR * futureRate.get();       //  가격을 검색한 Future를 이용해서 가격과 환율을 곱한다.
+    }
+});
+```
+먼저 Executor에 EUR과 USD 간 환율 검색 외부 서비스를 이용하는 Callable을 submit의 인수로 전달해서 첫 번째 Future를 만든다. 그리고 상점에서 해당 제품의 가격을 EUR로 반환하는 두 번째 Future를 만든다. 마지막으로 EUR 가격 정보에 환율을 곱한다.<br>
+위 CompletableFuture를 활용해 합친 코드에서 thenCombine 대신 thenCombineAsync를 사용하게 된다면 이는 위 자바 7로 구현한 코드에 가격과 환율을 곱하는 세 번째 Future를 추가로 만드는 것과 같다.<br>
+
 # CompletableFuture의 종료에 대응하는 방법
+위에서 구현했던 findPrices 메서드는 모든 상점에서 가격 정보를 가져온 다음에 그것을 사용할 수 있다. 이번에는 모든 상점에서 가격 정보를 제공할 때까지 기다리지 않고 각 상점에서 가격 정보를 제공할 때마다 즉시 보여줄 수 있는 최저가격 검색 애플리케이션을 만들어본다.
 ## 최저가격 검색 애플리케이션 리팩토링
+그러기 위해서는 먼저 모든 가격 정보를 포함할 때까지 리스트 생성을 기다리지 않도록 구현해야 한다. 그러기 위해선 상점에 필요한 일련의 연산 실행 정보를 포함하는 CompletableFuture의 스트림을 직접 제어해야 한다.
+
+* Future 스트림을 반환하도록 findPrices 메서드 리팩토링
+
+```java
+    public static Stream<CompletableFuture<String>> findPricesStream(String product) {
+        return shops.stream()
+                    .map(shop -> CompletableFuture.supplyAsync(
+                        () -> shop.getPrice(product), executor
+                    ))
+                    .map(future -> future.thenApply(Quote::parse))
+                    .map(future -> future.thenCompose(quote -> CompletableFuture.supplyAsync(
+                        () -> Discount.applyDiscount(quote), executor)));
+    }
+```
+
+이제 findPricesStream 메서드 내부에서 3가지 map 연산을 적용하고 반환하는 스트림에 4번째 map 연산을 적용한다.<br>
+1. 새로 추가한 연산은 단순히 각 CompletableFuture에 동작을 등록한다. 
+2. CompletableFuture에 등록된 동작은 CompletableFuture의 계산이 끝나면 thenAccept 메서드를 통해 값을 소비한다. thenAccept 메서드는 연산 결과를 소비하는 Consumer를 인수로 받는다.
+
+```java
+findPricesStream("myPhone").map(f -> f.thenAccept(System.out::println));
+```
+
+thenConmpose, thenCombine 메서드와 마찬가지로 thenAccept도 Async 버전이 있다. thenAcceptAsync 메서드는 CompletabeFuture가 완료된 스레드가 아니라 새로운 스레드를 이용해 Consumer를 실행한다. 이 예시에서는 thenAcceptAsync를 사용하게 될 경우 새로운 스레드를 이용할 수 있을 때 까지 기다려야 하는 상황이 일어날 수 있기 때문에 사용하지 않았다.<br>
+thenAccept 메서드는 CompletableFuture가 생성한 결과를 어떻게 소비할 지 미리 지정했으므로 CompletableFuture<Void>를 반환한다. 따라서 4번째 map 연산은 CompletableFuture<Void>를 반환한다.<br>
+
+가장 느린 상점에서 응답을 받아서 반환된 가격을 출력해야 된다면, 아래 코드 처럼 스트림의 모든 CompletableFuture<Void>를 배열로 추가하고 실행 결과를 기다려야 한다.
+
+* CompletableFuture 종료에 반응하기
+
+```java
+        CompletableFuture[] futures = findPricesStream("myPhone25s")
+            .map(f -> f.thenAccept(System.out::println))
+            .toArray(size -> new CompletableFuture[size]);
+        CompletableFuture.allOf(futures).join();
+```
+팩토리 메서드 `allOf`는 CompletableFuture 배열을 입력으로 받아 CompletableFuture<Void>를 반환한다. 전달된 모든 CompletableFuture가 완료되어야 CompletableFuture<Void>가 완료된다. 따라서 allOf 메서드가 반환하는 CompletableFuture에 join을 호출하면 원래 스트림의 모든 CompletableFuture의 실행 완료를 기다릴 수 있다.<br>
+반면, CompletableFuture 중 하나의 작업만이라도 끝나길 기다리는 상황이라면 이 때는 `anyOf` 메서드를 사용한다. anyOf 메서드는 CompletableFuture 배열을 입력으로 받아서 CompletableFuture<Object>를 반환한다. CompletableFuture<Object>는 처음으로 완료한 CompletableFuture의 값으로 동작을 완료한다. 
+
 ## 응용
+
+이제 위에서 적용한 코드를 살펴보면 이전 예제 코드와 달리 가격 정보가 지정된 시간에 나타나지 않을 뿐 아니라 `상점 가격 정보가 들어오는 대로 결과가 출력`된다.
+
+```java
+
+    public static Stream<CompletableFuture<String>> findPricesStream(String product) {
+        return shops.stream()
+                    .map(shop -> CompletableFuture.supplyAsync(
+                        () -> shop.getPrice(product), executor
+                    ))
+                    .map(future -> future.thenApply(Quote::parse))
+                    .map(future -> future.thenCompose(quote -> CompletableFuture.supplyAsync(
+                        () -> Discount.applyDiscount(quote), executor)));
+    }
+
+	    long start = System.nanoTime();
+        CompletableFuture[] futures = findPricesStream("myPhone25s")
+            .map(f -> f.thenAccept(s -> System.out.println(s + " (done in " + ((System.nanoTime() - start) / 1_000_000) + " msecs)")))
+            .toArray(size -> new CompletableFuture[size]);
+        CompletableFuture.allOf(futures).join();
+        System.out.println("All shops have now responded in " + ((System.nanoTime() - start) / 1_000_000) + " msecs");
+```
+
+* 결과
+
+```text
+LetsSaveBig price is 97.2 (done in 2108 msecs)
+BestPrice price is 126.8625 (done in 2137 msecs)
+BuyItAll price is 158.726 (done in 2819 msecs)
+MyFavoriteShop price is 138.376 (done in 2872 msecs)
+ShopEasy price is 178.695 (done in 3012 msecs)
+All shops have now responded in 3013 msecs
+```
+
+* anyOf 의 결과
+
+```text
+BuyItAll price is 144.71 (done in 1659 msecs)
+All shops have now responded in 1674 msecs
+```
+
+임의의 지연이 추가되면 마지막 가격 정보를 늦게 응답 받더라도 처음 응답받은 가격 정보를 먼저 얻을 수 있다. 즉, 결과로 출력된 상품의 순서를 봐도 결과가 먼저 나온 상품 정보부터 출력된다.
 # 요약
+* 한 개 이상의 원격 외부 서비스를 사용하는 긴 동작을 실행할 때는 `비동기 방식`으로 애플리케이션의 성능과 반응성을 향상시킬 수 있다.
+* `CompletableFuture`의 기능을 이용하면 쉽게 비동기 API를 구현할 수 있다.
+* CompletableFuture를 이용할 때 비동기 태스크에서 발생한 에러를 관리하고 전달할 수 있다. - completeExceptionally 활용
+* 동기 API를 CompletableFuture로 감싸서 비동기적으로 소비할 수 있다.
+* 서로 독립적인 비동기 동작이든 아니면 하나의 비동기 동작이 다른 비동기 동작의 결과에 의존하는 상황이든 여러 비동기 동작을 조립하고 조합할 수 있다. - thenCompose, thenCombine, thenApply, thenAccept
+* CompletableFuture에 콜백을 등록해서 Future가 동작을 끝내고 결과를 생산했을 때 어떤 코드를 실행하도록 지정할 수 있다. - thenApply
+* CompletableFuture 리스트의 모든 값이 완료될 때 까지 기다릴지 아니면 하나의 값만 완료되길 기다릴지 선택할 수 있다. - allOf, anyOf
+
+> #### thenCompose, thenCombine, thenApply, thenAccept
+> * thenCompose - 첫 번째 연산의 결과를 두 번째 연산으로 전달
+> * thenCombine - 첫 번째 CompletableFuture의 동작 완료와 관계없이 두 번째 CompletableFuture를 실행
+> * thenApply - CompletableFuture가 끝날 때까지 블록하지 않고 CompletableFuture를 콜백으로 반환하기 때문에 또다른 콜백함수 연결할 수 있다.
+> 참조 : [https://devidea.tistory.com/34](https://devidea.tistory.com/34)
