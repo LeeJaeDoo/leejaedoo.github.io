@@ -239,8 +239,60 @@ people.stream().sorted(Comparator.comparing(byAge).thenComparing(byTheirName))
 ```
 두 개의 람다 표현식을 통해 중복 비교가 필요하다면 먼저 comparing() 메서드를 사용하여 Comparator 타입을 리턴 후, 리턴된 Comparator에서 thenComparing() 메서드를 호출해 나이와 이름 두 값에 따라 비교하는 복합 (composite) comparator를 생성한다.
 # collect 메서드와 Collectors 클래스 사용하기
-collect() 메서드는 컬렉션을 다른 형태, 즉 가변 컬렉션(mutable collection)으로 변경하는 reduce 오퍼레이션이다. collect() 메서드에서는 Collectors 클래스의 utiliy 메서드들과 조합하여 사용하면 더욱 편리하다.
+collect() 메서드는 컬렉션을 다른 형태, 즉 가변 컬렉션(mutable collection)으로 변경하는 reduce 오퍼레이션이다. collect() 메서드에서는 Collectors 클래스의 utiliy 메서드들과 조합하여 사용하면 더욱 편리하다.<br>
+
+* element 추가 예제
+
+```java
+final List<Person> people = Arrays.asList(
+    new Person("John", 25),
+    new Person("Sara", 21),
+    new Person("Jane", 21),
+    new Person("Greg", 35)
+);
+
+// 1.
+List<Person> olderThan20 = new ArrayList<>();
+people.stream()
+      .filter(person -> person.getAge() > 20)
+      .forEach(person -> olderThan20.add(person));
+
+// 2.
+List<Person> olderThan20 =
+            people.stream()
+                  .filter(person -> person.getAge() > 20)
+                  .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+
+// 3.
+List<Person> olderThan20 = 
+            people.stream()
+                  .filter(person -> person.getAge() > 20)
+                  .collect(Collectors.toList());
+```
+**1번**은 olderThan20 컬렉션에 element를 추가하는 operation이 너무 low level이다. 즉, 서술적이지 않고 명령형 스타일의 코드다. 이터레이션을 동시에 실행하려면, 즉시 thread safe 문제에 대해 고려해야 한다. 가변성은 병렬화를 어렵게 만든다.
+
+**2번**에서는 1번에서의 병렬화 문제를 collect() 메서드를 활용함으로써 해결할 수 있다. collect() 메서드는 element들에 대한 스트림을 가지며 결과 컨테이너로 그 스트림을 모은다. collect() 메서드는 첫 번째 파라미터로 factory나 supplier를 갖는다.<br>
+2번 코드는 크게 두 가지 장점이 있다.
+
+* 서술적으로 프로그래밍이 가느앟며, 결과를 모아서(collect) ArrayList에 넣는다는 목적을 잘 나타내고 있다.
+* 명시적 변경이 발생하지 않기 때문에 이터레이션의 실행을 병렬화하기 쉽다. 따라서 thread safe하다. 이는 ArrayList 자체는 thread safe하지 않더라도 가능하다.
+
+**3번** 코드는 Collector를 파라미터로 사용한다. Collector는 supplier, accumulator, combiner의 operation에 대한 인터페이스 역할을 한다. Collectors 유틸리티 클래스는 toList() 컨비니언스 메서드를 제공하며 이 메서드는 Collect 인터페이스의 구현을 생성하여 element들을 ArrayList에 모으는 역할을 한다.
+
+
+이 밖에도 Collectors 유틸리티는 toSet()이나 key-value 컬렉션에 모으는 toMap(), joining(), mapping(), collectingAndThen(), minBy(), groupingBy()등의 메서드를 사용하여 여러 operation을 합쳐 사용할 수 있다.
 # 디렉터리에서 모든 파일 리스트
-# 디렉터리에서 선택한 파일 리스트
-# flatMap을 사용하여 서브 디렉터리 리스트
-# 파일 변경
+
+* ex.
+
+```java
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+// 1.
+Files.list(Paths.get(".")).forEach(System.out::println);
+
+// 2.
+Files.list(Paths.get(".")).filter(Files::isDirectory).forEach(System.out::println);
+```
