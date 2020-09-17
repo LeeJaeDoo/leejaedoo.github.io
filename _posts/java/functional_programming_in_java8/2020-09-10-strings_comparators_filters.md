@@ -274,7 +274,7 @@ List<Person> olderThan20 =
 **2번**에서는 1번에서의 병렬화 문제를 collect() 메서드를 활용함으로써 해결할 수 있다. collect() 메서드는 element들에 대한 스트림을 가지며 결과 컨테이너로 그 스트림을 모은다. collect() 메서드는 첫 번째 파라미터로 factory나 supplier를 갖는다.<br>
 2번 코드는 크게 두 가지 장점이 있다.
 
-* 서술적으로 프로그래밍이 가느앟며, 결과를 모아서(collect) ArrayList에 넣는다는 목적을 잘 나타내고 있다.
+* 서술적으로 프로그래밍이 가능하며, 결과를 모아서(collect) ArrayList에 넣는다는 목적을 잘 나타내고 있다.
 * 명시적 변경이 발생하지 않기 때문에 이터레이션의 실행을 병렬화하기 쉽다. 따라서 thread safe하다. 이는 ArrayList 자체는 thread safe하지 않더라도 가능하다.
 
 **3번** 코드는 Collector를 파라미터로 사용한다. Collector는 supplier, accumulator, combiner의 operation에 대한 인터페이스 역할을 한다. Collectors 유틸리티 클래스는 toList() 컨비니언스 메서드를 제공하며 이 메서드는 Collect 인터페이스의 구현을 생성하여 element들을 ArrayList에 모으는 역할을 한다.
