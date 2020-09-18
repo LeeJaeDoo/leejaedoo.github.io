@@ -137,4 +137,157 @@ use() 메서드를 사용하면 생성자나 close() 메서드의 호출을 기�
 **2번**과 같이 긴 람다 표현식을 사용하는 것은 코드의 간결성, 가독성, 유지보수의 간편함이라는 장점을 잃게 된다. 지양하는 것이 좋다.
 
 # 잠금(Lock) 관리
-잠금(Lock)은 병렬로 실행되는 자바 애플리케이션에서 중요한 역할을 한다.
+잠금(Lock)은 병렬로 실행되는 자바 애플리케이션에서 중요한 역할을 한다. 여기서는 람다 표현식을 활용하여 세부적인 부분에 대한 잠금(Lock)처리를 설정해본다.
+
+기존에 사용되어 온 **synchronized** 키워드는 사용에 제한적이었다.<br>
+첫째로, 메서드가 호출되는 시간 제어가 불가능했고 이는 deadlock과 livelock 발생 가능성을 증가시키게 된다.<br> 
+둘째로, 실제 synchronized 실제 적용이 어렵다.
+
+이를 해결하기 위해 자바 5에서는 **Lock 인터페이스**가 추가됐으나 양방향 synchronized가 아닌 개발자가 직접 locking과 unlocking 설정을 일일히 해줘야 한다는 문제가 있었다.
+
+* Lock 사용한 예제 코드
+
+```java
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.company.Locker.runLocked;
+
+public class Locking {
+    Lock lock = new ReentrantLock();
+
+    public void setLock(final Lock mock) {
+        this.lock = mock;
+    }
+    
+    // 1.
+    public void doOp1() {
+        lock.lock();
+        try {
+            /* ...critical code ...*/
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+**1번**과 같이 개발하게 되면 장황하고 오류 발생하기 쉬운 코드가 된다.
+
+* 람다 표현식 적용
+
+```java
+import java.util.concurrent.locks.Lock;
+
+public class Locker {
+
+    public static void runLocked(Lock lock, Runnable block) {
+        lock.lock();
+
+        try {
+            block.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+
+// 2.
+public void doOp2() {
+    runLocked(lock, () -> {/*..critical code ...*/});
+}
+
+public void doOp3() {
+    runLocked(lock, () -> {/*..critical code ...*/});
+}
+
+public void doOp4() {
+    runLocked(lock, () -> {/*..critical code ...*/});
+}
+
+```
+Locker 클래스에서 Lock 인터페이스에서 동작할 번거로운 작업들을 모두 캡슐화 한 후 **2번**과 같이 runLocked() 메서드를 사용하여 execute aroutn pattern이 적용된 구조로 크리티컬 섹션을 래핑할 수 있다. 이로써 메서드는 상당히 간결해졌다.  
+
+# 간결한 예외 테스트의 생성
+람다 표현식을 활용한 유닛 테스트를 실행해본다.
+
+```java
+public class RodCutter {
+    public void setPrices(final List<Integer> prices) {
+        throw new RodCutterException();
+    }
+    public int maxPoint(final int length) {
+        if (length == 0) throw new RodCutterException();
+        return 0;
+    }
+}
+```
+
+* try/catch를 활용한 예외 테스트
+
+```java
+@Test
+public void VerboseExceptionTest() {
+    rodCutter.setPrice(prices);
+    try {
+        rodCutter.maxProfit(0);
+        fail("Expecterd exception for zero length");
+    } catch (RodCutterException ex) {
+        assertTrue("expected", true);
+    }
+}
+```
+
+매우 장황하며 maxProfit() 메서드 호출 부분에서 에러 발생 가능성이 높다.
+
+* 어노테이션을 활용한 예외 테스트
+
+```java
+@Test(expected = RodCutterException.class)
+public void TerseExceptionTest() {
+    rodCutter.setPrices(prices);
+    rodCutter.maxProfit(0);
+}
+```
+
+코드는 간결하지만 예외가 발생한 메서드가 setPrices()인지 maxProfit() 인지 정확히 알 수가 없다.
+
+* 람다 표현식을 활용한 예외 테스트
+
+```java
+public class TestHelper {
+    public static <X extends Throwable> Throwable assertThrows(final Class<X> exceptionClass, 
+                                                               final Runnable block) {
+        try {
+            block.run();
+        } catch(Throwable ex) {
+            if (exceptionClass.isInstance(ex))  return ex; 
+        }
+        fail("Failed to throw expected exception");
+        return null;
+    }
+}
+
+@Test
+public void ConciseExceptionTest() {
+    rodCutter.setPrices(prices);
+    assertThrows(RodCutterException.class, () -> rodCutter.maxProfit(0));
+}
+```
+
+TestHelper에서 예외 클래스와 실행할 코드 블록을 가진 정적 메서드인 assertThrows()를 작성한다. 이 메서드는 예외 코드가 발생하는지 조사하는 역할을 한다. 예외가 발생하지 않거나 첫 번째 파라미터로 주어진 타입과 다른 예외가 발생한다면 호출은 Junit의 fail() 메서드를 사용하여 실패했음을 알린다.
+
+* 실제 사용 코드
+
+```java
+@Test
+public void ConciseExceptionTest() {
+    rodCutter.setPrices(prices);
+    assertThrows(RodCutterException.class, () -> rodCutter.maxProfit(0));
+}
+```
+maxProfit() 메서드가 예상되는 예외를 발생한다면 패스한다.
+
+# 정리
+우리는 자동 GC에 완전히 의존할 수는 없다.(특히 외부 리소스 활용할 경우)<br>
+execute around method 패턴은 실행 flow에 대한 세밀한 제어와 외부 리소스를 해제하는데 도움을 준다. `람다 표현식은 이 execute around pattern을 구현하는데 적합하다.`<br>
+ 
