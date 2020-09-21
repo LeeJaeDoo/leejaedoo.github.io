@@ -25,6 +25,28 @@ comments: true
 함수를 인수로 받아 사용하면서 코드가 정확히 어떤 작업을 수행하고 프로그램의 상태를 어떻게 바꿀지 예측하기 어려워진다. 또한 디버깅도 어려워진다. 따라서 인수로 전달된 함수가 어떤 부작용을 포함하게 될지 정확하게 문서화하는 것이 좋다. 
 ## 커링
 **커링**이란 함수를 모듈화하고 코드를 재사용하는 데 도움을 주는 기법이다.
+
+* 변환 패턴 적용 전 예제
+
+```java
+static double converter(double x, double f, double b) {
+    return x * f + b;
+}
+```
+
+* 적용 후
+
+```java
+static DoubleUnaryOperator curriedConverter(double f, double b) {
+    return (double x) -> x * f + b;
+}
+
+DoubleUnaryOperator convertUSDtoGBP = curriedConverter(0.6, 0);
+
+double gbp = convertUSDtoGBP.applyAsDouble(1000);
+```
+
+x, f, b라는 세 인수를 converter 메서드로 전달하지 않고 f, b 두 가지 인수로 함수를 요청하고 있다. 그리고 반환된 함수에 인수 x를 이용해서 `x * f + b`라는 결과를 얻는다. 이런 방식으로 변환 로직을 재활용할 수 있으며 다양한 변환 요소로 다양한 함수를 만들 수 있다.
 # 영속 자료구조
 ## 파괴적인 갱신과 함수형
 ## 트리를 사용한 다른 예제
