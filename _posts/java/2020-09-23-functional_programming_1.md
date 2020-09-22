@@ -48,15 +48,223 @@ double gbp = convertUSDtoGBP.applyAsDouble(1000);
 
 x, f, b라는 세 인수를 converter 메서드로 전달하지 않고 f, b 두 가지 인수로 함수를 요청하고 있다. 그리고 반환된 함수에 인수 x를 이용해서 `x * f + b`라는 결과를 얻는다. 이런 방식으로 변환 로직을 재활용할 수 있으며 다양한 변환 요소로 다양한 함수를 만들 수 있다.
 # 영속 자료구조
-## 파괴적인 갱신과 함수형
-## 트리를 사용한 다른 예제
-## 함수형 접근법 사용
+영속 자료구조란 함수형 프로그램에서의 함수형 자료구조, 불변 자료구조 등을 지칭한다.
+
+함수형 메서드에서는 전역 자료구조나 인수로 전달된 구조를 갱신할 수 없다. 자료구조를 바꾼다면 같은 메서드를 두 번 호출했을 때 결과가 달라지면서 참조 투명성에 위배되고 인수를 결과로 단순하게 매핑할 수 있는 능력이 사라지기 때문이다. 
 # 스트림과 게으른 평가
+스트림은 단 한 번만 소비할 수 있어 재귀적으로 정의할 수 없다.
 ## 자기 정의 스트림
+
+* 소수를 생성하는 재귀 스트림 예제
+
+```java
+// 1.숫자 스트림 생성
+static IntStream numbers() {
+    return IntStream.iterate(2, n -> n + 1);
+}
+
+// 2.머리 획득
+static int head(IntStream numbers) {
+    return numbers.findFirst().getAsInt();
+}
+
+// 3.꼬리 필터링
+static IntStream tail(IntStream numbers) {
+    return numbers.skip(1);
+}
+
+// 4.재귀적으로 소수 스트림 생성
+static IntStream primes(IntStream numbers) {
+    int head = head(numbers);
+    return IntStream.concat(
+        IntStream.of(head),
+        primes(tail(numbers).filter(n -> n % head != 0))
+    );
+}
+```
+### 나쁜 소식
+하지만 예상과 다르게 4번 코드를 실행하게 되면 `Exception in thread "main" java.lang.IllegalStateException: stream has already been operated upon or closed` 라는 에러가 발생하는데 이는 2번과 3번에서 사용한 **findFirst**와 **skip**이 최종 연산이기 때문에 최종 연산을 스트림에 호출하게 되면서 스트림이 이미 완전 소비된 상태에서 계속 호출이 되면서 발생되게 된다.
+
+### 게으른 평가
+또 한가지 문제가 있다. 정적 메서드 IntStream.concat은 두 개의 스트림 인스턴스를 인수로 받는다. 두 번째 인수가 primes를 직접 재귀적으로 호출하면서 무한 재귀에 빠질 수가 있는데 이를 `lazy evaluation`이란 제한을 둠으로써 `재귀적 정의를 허용하지 않는다`라는 자바 8의 스트림 규칙이 발생하지 않게 된다. 즉, 소수를 처리할 필요가 있을 때만 스트림을 실제로 평가한다.
+
+> lazy evaluation이란? [https://dororongju.tistory.com/137](https://dororongju.tistory.com/137)
 ## 게으른 스트림 만들기
+자바 8의 스트림은 요청할 때만 값을 생성하는 블랙박스와 같다. 스트림에 일련의 연산을 적용하면 연산이 수행되지 않고 일단 저장된다. 그리고나서 스트림에 **최종 연산**을 적용해서 실제 계산을 해야하는 상황에서만 실제 연산이 이뤄진다.<br>
+이러한 `게으른 특성` 때문에 각 연산 별로 스트림을 탐색할 필요 없이 한 번에 여러 연산을 처리할 수 있다.
+
+* 기본적인 연결 리스트
+
+```java
+interface MyList<T> {
+    T head();
+
+    MyList<T> tail();
+
+    default boolean isEmpty() {
+        return true;
+    }
+}
+
+class MyLinkedList<T> implements MyList<T> {
+    private final T head;
+    private final MyList<T> tail;
+    public MyLinkedList(T head, MyList<T> tail) {
+        this.head = head;
+        this.tail = tail;
+    }
+
+    public T head() {
+        return head;
+    }
+
+    public MyList<T> tail() {
+        return tail;
+    }
+
+    public boolean isEmpty() {
+        return false;
+    }
+}
+
+class Empty<T> implements MyList<T> {
+    public T head() {
+        throw new UnsupportedOperationException();
+    }
+
+    public MyList<T> tail() {
+        throw new UnsupportedOperationException();
+    }
+}
+
+MyList<Integer> i = new MyLinkedList<>(5, new MyLinkedList<>(10, new Empty<>()));
+``` 
+
+* 기본적인 게으른 리스트
+
+```java
+import java.util.function.Supplier;
+
+class LazyList<T> implements MyList<T>{
+    final T head;
+    final Supplier<MyList<T>> tail;
+    public LazyList(T head, Supplier<MyList<T>> tail) {
+        this.head = head;
+        this.tail = tail;
+    }
+
+    public T head() {
+        return head;
+    }
+
+    public MyList<T> tail() {
+        return tail.get();      //  위의 head와 달리 tail에서는 Supplier로 게으른 동작을 만듦.
+    }
+
+    public boolean isEmpty() {
+        return false;
+    }
+}
+```
+
+Supplier<T>를 이용해서 게으른 리스트를 만들게 되면 tail 모두 메모리에 존재하지 않게 할 수 있다.(게으른 특성을 활용)
+
+일반적으로 eagerly 기능 보다 게으른 편이 성능이 좋은 편이다. 모든 값을 계산해버리는 것 보다는 요청했을 때 값을 계산하는 것이 여러 면에서 더 좋다.(물론 현실은 다른 경우가 있다.)
+
+이처럼 게으른 자료구조는 강력한 프로그래밍 도구다. 
 # 패턴 매칭
+일반적으로 함수형 프로그래밍에서 또 하나의 특징으로 (구조적인) `패턴 매칭(pattern matching)`을 들 수 있다.
 ## 방문자 디자인 패턴
+자바에서는 `방문자 디자인 패턴(visitor design pattern)`으로 자료형을 언랩할 수 있다. 특히 특정 데이터 형식을 '방문' 하는 알고리즘을 캡슐화하는 클래스를 따로 만들 수 있다.
+
+* 방문자 패턴 예제
+
+```java
+class BinOp extends Expr {
+    ...
+    public Expr accept(SimplifyExprVisitor v) {
+        return v.visit(this);
+    }
+}
+
+public class SimplifyExprVisitor {
+    ...
+    public Expr visit(BinOp e) {
+        if ("+".equals(e.opname) && e.right instanceof Number && ...) {
+            return e.left;
+        }
+        return e;
+    }
+} 
+```
+SimplifyExprVisitor를 인수로 받는 accept를 BinOp에 추가한 다음 BinOp 자신을 SimplifyExprVisitor로 전달한다. 그러면 SimplifyExprVisitor는 BinOp 객체를 언랩할 수 있다.
 ## 패턴 매칭의 힘
+자바는 패턴 매칭을 지원하지 않지만 람다를 활용하면 흉내는 낼 수 있다.
+
+* 패턴 매칭 적용 전 예제
+
+```scala
+Expr simplifyExpression(Expr expr) {
+    if (expr instanceof BinOp
+        && ((BinOp)expr).opname.equals("+"))
+        && ((BinOp)expr).right instanceof Number
+        && ...  //  코드가 깔끔하지 못하다.
+        && ... ) {
+        return (BinOp)expr.left;
+    }
+}
+```
+
+* 스칼라 패턴 매칭 예제
+
+```scala
+def simplifyExpression(expr: Expr): Expr = expr match {
+    case BinOp("+", e, Number(0)) => e   // 0 더하기  
+    case BinOp("*", e, Number(1)) => e   // 1 곱하기 
+    case BinOp("/", e, Number(1)) => e   // 1로 나누기 
+    case _ => expr   //  expr을 단순화할 수 있다.
+}
+```
+
+### 자바로 패턴 매칭 흉내 내기
+자바 8의 람다를 이용한 패턴 매칭 흉내는 단일 수준의 패턴 매칭만 지원한다.
+
+```java
+interface TriFunction<S, T, U, R> {
+    R apply(S s, T t, U u);
+}
+
+static <T> T patternMatchExpr(Expr e, TriFunction<String, Expr, Expr, T> binopcase, Function<Integer, T> numcase, Supplier<T> defaultcase) {
+    return (e instanceof BinOp) ?
+             binopcase.apply(((BinOp)e).opname, ((BinOp)e).left, ((BinOp)e).right) :
+             (e instanceof Number) ?
+             numcase.apply(((Number)e).val) :
+             default.get();
+}
+
+public static Expr simplify(Expr e) {
+    TriFunction<String, Expr, Expr, Expr> binopcase =   //  BinOp 표현식 처리
+        (opname, left, right) -> {
+            if ("+".equals(opname)) {
+                if (left instanceof Number && ((Number) left).val == 0) { return right; }
+                if (right instanceof Number && ((Number) right).val == 0) { return left; }
+            }
+            if ("*".equals(opname)) {
+                if (left instanceof Number && ((Number) left).val == 1) { return right; }
+                if (right instanceof Number && ((Number) right).val == 1) { return left; }
+            }
+            return new BinOp(opname, left, right);
+        };
+    Function<Integer, Expr> numcase = val -> new Number(val);   //  숫자 처리
+    Supplier<Expr> defaultcase = () -> new Number(0);           //  수식을 인식할 수 없을 때 기본 처리
+
+    return patternMatchExpr(e, binopcase, numcase, defaultcase);    //  패턴 매칭 적용
+} 
+
+Expr e = new BinOp("+", new Number(5), new Number(0));
+Expr match = simplify(e);
+System.out.println(match);  //  5 출력 
+```
 # 기타 정보
 ## 캐싱 또는 기억화
 ## '같은 객체를 반환함'은 무엇을 의미하는가?
