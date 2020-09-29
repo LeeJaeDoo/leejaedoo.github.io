@@ -1,9 +1,9 @@
 ---
-date: 2020-09-23 15:40:40
+date: 2020-09-27 15:40:40
 layout: post
 title: DDD START! 도메인 주도 설계 구현과 핵심 개념 익히기
 subtitle: 1. 도메인 모델 시작
-description: 1. 도메인 모델 시
+description: 1. 도메인 모델 시작
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 category: ddd
