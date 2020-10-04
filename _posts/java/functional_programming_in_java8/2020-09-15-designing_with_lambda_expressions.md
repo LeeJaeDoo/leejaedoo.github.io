@@ -408,3 +408,6 @@ public interface UseInstance<T, X extends Throwable> {
 ```
 
 UseInstance 인터페이스의 파라미터를 받는 어떤 메서드라도 적절한 예외 처리를 할 준비가 되어있고 그 예외를 전파할 수 있는 준비가 되어있다.
+
+# 참고
+* [https://medium.com/sjk5766/dependency-injection-ioc-dip-ioc-container%EC%A0%95%EB%A6%AC-310885cca412](https://medium.com/sjk5766/dependency-injection-ioc-dip-ioc-container%EC%A0%95%EB%A6%AC-310885cca412)
