@@ -24,16 +24,16 @@ comments: true
 
 ```java
 public class Asset {
-    public enum AssertType {BOND, STOCK};
-    private final AssertType type;
+    public enum AssetType {BOND, STOCK};
+    private final AssetType type;
     private final int value;
 
-    public Asset(AssertType type, int value) {
+    public Asset(AssetType type, int value) {
         this.type = type;
         this.value = value;
     }
 
-    public AssertType getType() {
+    public AssetType getType() {
         return type;
     }
 
@@ -45,10 +45,10 @@ public class Asset {
 public class AssetUtil {
 
     final List<Asset> assets = Arrays.asList(
-        new Asset(Asset.AssertType.BOND, 1000),
-        new Asset(Asset.AssertType.BOND, 2000),
-        new Asset(Asset.AssertType.STOCK, 3000),
-        new Asset(Asset.AssertType.STOCK, 4000)
+        new Asset(Asset.AssetType.BOND, 1000),
+        new Asset(Asset.AssetType.BOND, 2000),
+        new Asset(Asset.AssetType.STOCK, 3000),
+        new Asset(Asset.AssetType.STOCK, 4000)
     );
 
     public static int totalAssetValues(final List<Asset> assets) {
@@ -72,13 +72,13 @@ totalAssetValues() 메서드와 같이 이터레이터(stream)를 사용한 람�
 ```java
 public static int totalBondValues(final List<Asset> assets) {
     return assets.stream()
-                 .mapToInt(asset -> asset.getType() == Asset.AssertType.BOND ? asset.getValue() : 0)
+                 .mapToInt(asset -> asset.getType() == Asset.AssetType.BOND ? asset.getValue() : 0)
                  .sum();   
 }
 
 public static int totalBondValues(final List<Asset> assets) {
     return assets.stream()
-                 .mapToInt(asset -> asset.getType() == Asset.AssertType.STOCK ? asset.getValue() : 0)
+                 .mapToInt(asset -> asset.getType() == Asset.AssetType.STOCK ? asset.getValue() : 0)
                  .sum();   
 }
 ```
@@ -103,8 +103,8 @@ public static int totalAssetValues(final List<Asset> assets, final Predicate<Ass
 
 ```java
 System.out.println(totalAssetValues(assets, asset -> true));
-System.out.println(totalAssetValues(assets, asset -> asset.getType() == Asset.AssertType.BOND));
-System.out.println(totalAssetValues(assets, asset -> asset.getType() == Asset.AssertType.STOCK));
+System.out.println(totalAssetValues(assets, asset -> asset.getType() == Asset.AssetType.BOND));
+System.out.println(totalAssetValues(assets, asset -> asset.getType() == Asset.AssetType.STOCK));
 ```
 
 OCP(개방-폐쇄 원칙)를 적용하여 리팩토링 하였다. 메서드의 변경 없이 원하는 항목만 변경이 가능하게 되었다.<br>
