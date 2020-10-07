@@ -145,7 +145,7 @@ order.cancel();
 # ID를 이용한 애그리거트 참조
 한 애그리거트에서 다른 애그리거트를 참조한다는 것은 애그리거트의 루트를 참조한다는 것과 같다.
 
-* 필드로 참조
+* 필드로 직접 참조
 
 ```java
 public class Member {
@@ -153,7 +153,7 @@ public class Member {
 }
 
 public class Orderer {
-    private Member member;  //  회원 애그리거트 루트인 Member를 필드로 참조 
+    private Member member;  //  회원 애그리거트 루트인 Member를 필드로 적접 참조 
     private String name;
     ...
 }
