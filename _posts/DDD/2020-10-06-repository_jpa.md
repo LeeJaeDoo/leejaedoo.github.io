@@ -156,8 +156,90 @@ public class Order {
 > @Access가 선언되어 있지 않으면, @Id나 @EmbeddedId 위치로 접근 방식을 선택한다. 필드에 위치하면 **필드 접근 방식**, get 메서드에 위치하면 메서드 접근 방식을 선택한다.
 
 ## AttributeConverter를 이용한 밸류 매핑 처리
+두 개 이상의 프로퍼티를 가진 밸류 타입을 한 개 컬럼에 매핑해야 할 경우 @Embeddable로는 처리할 수 없다. AttributeConverter를 사용해서 변환처리 할 수 있다. AttributeConverter는 JPA 2.1에 추가된 인터페이스로 다음과 같이 밸류 타입과 컬럼 데이터 간의 변환 처리를 위한 기능을 정의하고 있다.
+
+```java
+public interface AttributeConverter<X, Y> {
+    public Y convertToDatabaseColumn(X attribute);
+    public X convertToEntityAttribute(Y dbData);
+}
+```
+
+타입 파라미터 X는 **밸류 타입**, Y는 **DB 타입**이다. convertToDatabaseColumn() 메서드는 `밸류 타입을 DB 컬럼 값으로 변환`하고, convertToEntityAttribute() 메서드는 `DB 컬럼 값을 밸류로 변환`한다.
+
+```java
+@Converter(autoApply = true)
+public class MoneyConverter implements AttributeConverter<Money, Integer> {
+    
+    @Override
+    public Integer convertToDatabaseColumn(Money money) {
+        if (money == null)  return null;
+        else    return money.getValue();
+    }
+    
+    @Override
+    public Money convertToEntityAttribute(Integer value) {
+        if (value == null)  return null;
+        else    return new Money(value);
+    }
+    
+}
+``` 
+
+**autoApply를 true로 지정**하면 위 코드에서는 모델에 출현하는 모든 Money 타입의 프로퍼티에 대해 MoneyConverter를 자동으로 적용한다.<br>
+**autoApply가 false인 경우** 프로퍼티 값을 변환할 때 아래와 같이 사용한 컨버터를 직접 지정할 수 있다.
+
+```java
+public class Order {
+    @Column(name = "total_amounts)
+    @Converter(converter = MoneyConverter.class)
+    private Money totalAmounts;
+    // ... 
+}
+```
 ## 밸류 컬렉션: 별도 테이블 매핑
+Order 엔티티는 한 개 이상의 OrderLine을 가질 수 있다. OrderLine에 순서가 있다면 아래와 같이 List타입을 사용하여 OrderLine 타입의 컬렉션을 프로퍼티로 갖게 된다.
+
+밸류 타입의 컬렉션은 별도 테이블에 보관한다. 아래와 같이 ORDER_LINE 테이블은 외부키를 이용하여 PURCHASE_ORDER 테이블을 참조한다.<br>
+이 외부키는 컬렉션이 속할 엔티티를 의미한다. List 타입의 컬렉션은 인덱스 값이 필요하므로 ORDER_LINE 테이블에는 인덱스 값을 저장하기 위한 컬럼(line_idx)도 존재한다.
+
+밸류 컬렉션을 별도 테이블로 매핑할 때는 **@ElementCollection**과 **@CollectionTable**을 함께 사용한다.  
+```java
+@Entity
+@Table(name = "purchase_order")
+public class Order {
+    //...
+    @ElementCollection
+    @CollectionTable(name = "order_line",
+                     joinColumns = @JoinColumn(name = "order_number"))
+    @OrderColumn(name = "line_idx")
+    private List<OrderLine> orderLines;
+    //...
+}
+
+@Embeddable
+public class OrderLine {
+    @Embedded
+    private ProductId productId;
+
+    @Column(name = "price")
+    private Money price;
+
+    @Column(name = "quantity")
+    private int quantity;
+
+    @Column(name = "amounts")
+    private Money amounts;
+
+    //...
+}
+```
+
+OrderLine의 매핑을 함께 표시했는데 OrderLine에 List의 인덱스 값을 저장하기 위한 프로퍼티는 존재하지 않는다. 왜냐하면 List 타입 자체가 인덱스를 갖고 있기 때문이다. JPA는 @OrderColumn 애노테이션을 이용해서 지정한 컬럼에 리스트의 인덱스 값을 저장한다.
+
+**@CollectionTable**은 밸류를 저장할 테이블을 지정할 때 사용한다. name은 속성으로 테이블 명을 지정하고 joinColumns 속성은 외부키로 사용하는 컬럼을 지정한다. 위에서는 외부키가 한 개이지만, 두 개 이상인 경우는 @joinColumn의 배열을 이용해서 외부키 목록을 지정한다.
 ## 밸류 컬렉션: 한 개 컬럼 매핑
+밸류 컬렉션을 별도 테이블이 아닌 한 개 컬럼에 지정해야 할 때는 
 ## 밸류를 이용한 아이디 매핑
 ## 별도 테이블에 저장하는 밸류 매핑
 ## 밸류 컬렉션을 @Entity로 매핑하기
