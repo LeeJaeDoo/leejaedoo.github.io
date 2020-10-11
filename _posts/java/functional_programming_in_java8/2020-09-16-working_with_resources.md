@@ -186,7 +186,7 @@ public class Locker {
         try {
             block.run();
         } finally {
-            lock.unlock();
+            lock.unlock(); 
         }
     }
 }
