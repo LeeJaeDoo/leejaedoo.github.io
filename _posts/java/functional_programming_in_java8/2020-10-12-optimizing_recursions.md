@@ -95,32 +95,33 @@ public interface TailCall<T> {
 * 재귀 과정이 끝날 때까지 대기하고 있는 TailCall 재귀 메서드를 통해 반복적으로 이터레이션한다.
 * 재귀 과정이 끝에 도달하면, 최종 결과(종단 TailCall 인스턴스의 result() 메서드에 있는)를 리턴해야 한다.
 
-* iterate() 내부 소스
 
-```java
-    static <T> Stream<T> iterate(final T seed, final UnaryOperator<T> f) {
-        Objects.requireNonNull(f);
-        Spliterator<T> spliterator = new AbstractSpliterator<T>(9223372036854775807L, 1040) {
-            T prev;
-            boolean started;
-
-            public boolean tryAdvance(Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-                Object t;
-                if (this.started) {
-                    t = f.apply(this.prev);
-                } else {
-                    t = seed;
-                    this.started = true;
-                }
-
-                action.accept(this.prev = t);
-                return true;
-            }
-        };
-        return StreamSupport.stream(spliterator, false);
-    }
-```
+> * iterate() 내부 소스
+>
+> ```java
+>    static <T> Stream<T> iterate(final T seed, final UnaryOperator<T> f) {
+>        Objects.requireNonNull(f);
+>        Spliterator<T> spliterator = new AbstractSpliterator<T>(9223372036854775807L, 1040) {
+>            T prev;
+>            boolean started;
+>
+>            public boolean tryAdvance(Consumer<? super T> action) {
+>                Objects.requireNonNull(action);
+>                Object t;
+>                if (this.started) {
+>                    t = f.apply(this.prev);
+>                } else {
+>                    t = seed;
+>                    this.started = true;
+>                }
+>
+>                action.accept(this.prev = t);
+>                return true;
+>            }
+>        };
+>        return StreamSupport.stream(spliterator, false);
+>    }
+> ```
 
 여기서 TailCall 객체를 사용하면 대기하고 있는 TailCall 인스턴스의 스트림으로 레이지 이터레이션(Lazy Iteration)을 쉽게 사용할 수 있다. 6장에서 알아본 기술을 활용하면 대기하고 있는 TailCall 인스턴스의 생성을 지연시킬 수 있다.
 
