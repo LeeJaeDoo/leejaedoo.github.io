@@ -207,6 +207,58 @@ em.lock(board, LockModeType.OPTIMISTIC);
 
 * JPA가 제공하는 LockModeType옵션
 
+<table>
+  <thead>
+    <tr>
+      <th>락 모드</th>
+      <th>타입</th>
+      <th>설명</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>낙관적 락</td>
+      <td>OPTIMISTIC</td>
+      <td>낙관적 락을 사용한다.</td>
+    </tr>
+    <tr>
+      <td>낙관적 락</td>
+      <td>OPTIMISTIC_FORCE_INCREMENT</td>
+      <td>낙관적 락 & 버전정보를 강제로 증가</td>
+    </tr>
+    <tr>
+      <td>비관적 락</td>
+      <td>PESSIMISTIC_READ</td>
+      <td>비관적 락, 읽기 락을 사용</td>
+    </tr>
+    <tr>
+      <td>비관적 락/td>
+      <td>PESSIMISTIC_WRITE</td>
+      <td>비관적 락, 쓰기 락을 사용</td>
+    </tr>
+    <tr>
+      <td>비관적 락</td>
+      <td>PESSIMISTIC_FORCE_INCREMENT</td>
+      <td>비관적 락 & 버전정보를 강제로 증가</td>
+    </tr>
+    <tr>
+      <td>기타</td>
+      <td>NONE</td>
+      <td>락을 걸지 않는다.</td>
+    </tr>
+    <tr>
+      <td>기타</td>
+      <td>READ</td>
+      <td>JPA 1.0 호환 기능이다. OPTIMISTIC과 같으므로 OPTIMISTIC을 사용하면 된다.</td>
+    </tr>
+    <tr>
+      <td>기타</td>
+      <td>WRITE</td>
+      <td>JPA 1.0 호환 기능이다. OPTIMISTIC_FORCE_INCREMENT와 같다.</td>
+    </tr>
+  </tbody>
+</table>
+
 ### JPA 낙관적 락
 버전을 통해 트랜잭션을 커밋하는 시점에 충돌을 알 수 있다.
 
