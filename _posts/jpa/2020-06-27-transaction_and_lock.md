@@ -232,7 +232,7 @@ em.lock(board, LockModeType.OPTIMISTIC);
       <td>비관적 락, 읽기 락을 사용</td>
     </tr>
     <tr>
-      <td>비관적 락/td>
+      <td>비관적 락</td>
       <td>PESSIMISTIC_WRITE</td>
       <td>비관적 락, 쓰기 락을 사용</td>
     </tr>
