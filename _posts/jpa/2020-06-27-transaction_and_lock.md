@@ -73,6 +73,7 @@ comments: true
 </table>
 
 격리 수준에 따른 문제점은 다음과 같다.
+
 * DIRTY READ
 * NON-REPEATABLE READ(반복 불가능한 읽기)
 * PHANTOM READ
@@ -83,15 +84,18 @@ comments: true
 커밋하지 않은 데이터를 읽을 수 있다. 예를 들어 트랜잭션1이 수정 중인 데이터를 커밋하지 않았어도 트랜잭션2가 수정 중인 데이터를 읽을 수 있다. 이를 `DIRTY READ`라 한다.<br>
 트랜잭션2가 DIRTY READ한 데이터를 사용하는데 트랜잭션1을 롤백하면 데이터 정합성에 심각한 문제가 발생한다.<br>
 DIRTY READ를 허용하는 격리 수준을 READ UNCOMMITED라 한다.
+
 #### READ COMMITED
 커밋한 데이터만 읽을 수 있다. 따라서 DIRTY READ가 발생하지 않는다. 하지만 NON-REPEATABLE READ는 발생할 수 있다.<br>
 예를 들어 트랜잭션1이 회원 A를 조회 중인데 갑자기 트랜잭션2가 회원 A를 수정하고 커밋하면 트랜잭션1이 다시 회원 A를 조회했을 때 수정된 데이터가 조회된다.<br>
 이처럼 반복해서 같은 데이터를 읽을 수 없는 상태를 NON-REPEATABLE READ라 한다.<br>
 DIRTY READ는 허용하지 않지만, NON-REPEATABLE READ는 허용하는 격리 수준을 READ COMMITED라 한다.
+
 #### REPEATABLE READ
 한 번 조회한 데이터를 반복해서 조회해도 같은 데이터가 조회된다. 하지만 PHANTOM READ는 발생할 수 있다.<br>
 예를 들어 트랜잭션1이 10살 이하의 회원을 조회했는데 트랜잭션2가 5살 회원을 추가하고 커밋하면 트랜잭션1이 다시 10살 이하의 회원을 조회했을 때 회원하나가 추가된 상태로 조회된다. 이처럼 반복 조회 시 결과 집합이 달라지는 것을 PHANTOM READ라 한다.<br>
 NON-REPEATABLE READ는 허용하지 않지만 PHANTOM READ는 허용하는 격리 수준을 REPEATABLE READ라 한다.
+
 #### SERIALIZABLE
 가장 엄격한 격리 수준으로, PHANTOM READ도 발생하지 않는다. 하지만 동시성 처리 성능이 급격히 떨어질 수 있다.
 
@@ -107,6 +111,7 @@ JPA는 데이터베이스 트랜잭션 격리 수준을 READ COMMITED 정도로 
     * 트랜잭션 대부분은 충돌이 발생하지 않는다고 가정하는 방법.
     * 데이터베이스가 제공하는 락 기능이 아닌 JPA가 제공하는 버전 관리 기능을 사용한다. 즉, 애플리케이션이 제공하는 락이다.
     * 트랜잭션을 커밋하기 전까지는 트랜잭션의 충돌을 알 수 없다.
+    
 * 비관적 락 
     * 트랜잭션의 충돌이 발생한다고 가정하고 우선 락을 걸고 보는 방법.
     * 데이터베이스가 제공하는 락 기능을 사용한다. 대표적으로 select for update 구문이 있다.
@@ -127,8 +132,11 @@ JPA가 제공하는 낙관적 락을 사용하려면 @Version 어노테이션을
 
 * @Version 적용 가능 타입
     * Long(long)
+    
     * Integer(int)
+    
     * Short(short)
+    
     * Timestamp
     
 ```java
@@ -151,6 +159,7 @@ public class Board {
 
 #### 버전 정보 비교 방법
 엔티티를 수정하고 트랜잭션을 커밋하면 영속성 컨텍스트를 flush하면서 UPDATE 쿼리를 실행한다. 이 때 버전을 사용하는 엔티티면 검색 조건에 엔티티의 버전 정보를 추가한다.
+
 ```sql
 UPDATE BOARD
 SET
@@ -160,6 +169,7 @@ WHERE
     ID=?
     AND VERSION=?   (버전 비교)
 ```
+
 데이터베이스 버전과 엔티티 버전이 같으면 데이터를 수정할 때 동시에 버전도 하나 증가시킨다. 데이터베이스 버전이 증가해서 엔티티의 버전과 다르게 되면 JPA가 예외를 발생시킨다.
 
 > `버전은 엔티티의 값을 변경하면 증가`한다. 단, 연관관계 필드는 외래 키를 관리하는 연관관계의 주인 필드를 수정할 때만 버전이 증가한다.
@@ -170,18 +180,24 @@ WHERE
 > 벌크 연산은 버전을 무시한다. 따라서 벌크 연산에서는 버전 필드를 강제로 증가시켜줘야 한다.
 
 ### JPA 락 사용
+
 > JPA를 사용할 때 추천하는 전략은 READ COMMITED 트랜잭션 격리 수준 + 낙관적 버전 관리다(두 번의 갱신 내역 분실 문제 예방)
 
 락은 다음 위치에 적용할 수 있다.
+
 * EntityManager.lock(), EntityManager.find(), EntityManager.refresh()
+
 * Query.setLockMode() (TypeQuery 포함)
+
 * @NamedQuery
 
 다음처럼 조회할 때 락을 걸 수 있다.
+
 ```java
 Board board = em.find(Board.class, id, LockModeType.OPTIMISTIC);
 ```
 다음처럼 필요할 때 락을 걸 수도 있다.
+
 ```java
 Board board = em.find(Board.class, id);
 ...
