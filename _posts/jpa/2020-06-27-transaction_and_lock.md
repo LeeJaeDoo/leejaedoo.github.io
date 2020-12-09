@@ -205,8 +205,7 @@ Board board = em.find(Board.class, id);
 em.lock(board, LockModeType.OPTIMISTIC);
 ```
 
-* JPA가 제공하는 LockModeType옵션
-
+#### JPA가 제공하는 LockModeType옵션
 
 <table>
   <thead>
