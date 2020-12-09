@@ -196,11 +196,12 @@ WHERE
 ```java
 Board board = em.find(Board.class, id, LockModeType.OPTIMISTIC);
 ```
+
 다음처럼 필요할 때 락을 걸 수도 있다.
 
 ```java
 Board board = em.find(Board.class, id);
-...
+//...
 em.lock(board, LockModeType.OPTIMISTIC);
 ```
 
@@ -263,6 +264,7 @@ em.lock(board, LockModeType.OPTIMISTIC);
 버전을 통해 트랜잭션을 커밋하는 시점에 충돌을 알 수 있다.
 
 * 낙관적 락에서 발생하는 예외
+
     * javax.persistence.OptimisticLockException(JPA 예외)
     * org.hibernate.StaleObjectStateException(하이버네이트 예외)
     * org.springframework.orm.ObjectOptimisticLockingFailureException(스프링 예외 추상화)
@@ -314,10 +316,12 @@ JPA가 제공하는 비관적 락은 데이터베이스 트랜잭션 락 메커�
 일반적으로 웹 애플리케이션 환경은 트랜잭션을 시작하고 종료할 때 까지만 1차 캐시가 유효하다. 따라서 데이터베이스 접근 횟수를 획기적으로 줄이지는 못한다.<br>
 하이버네이트를 포함한 대부분의 JPA 구현체들은 애플리케이션 범위의 캐시를 지원하는데 이것을 공유 캐시, 2차 캐시라 한다. 이런 2차 캐시를 활용하면 애플리케이션 조회 성능을 향상시킬 수 있다.
 ![2차캐시 적용 전 후](../../assets/img/ehcache.jpg)
+
 #### 1차 캐시
 1차 캐시는 영속성 컨텍스트 내부에 있다. 트랜잭션을 커밋하거나 flush를 호출하면 1차 캐시에 있는 엔티티의 변경 내역을 데이터베이스에 동기화한다.<br>
 보통 트랜잭션을 시작할 때 영속성 컨텍스트를 생성하고 트랜잭션을 종료할 때 영속성 컨텍스트도 종료한다. 물론 OSIV를 사용하면 요청의 시작부터 끝까지 같은 영속성 컨텍스트를 유지한다.
 1차 캐시는 끄고 켤수 있는 옵션이 아니다. 영속성 컨텍스트 자체가 1차 캐시다.
+
 #### 2차 캐시
 애플리케이션에서 공유하는 캐시를 말한다. 따라서 애플리케이션을 종료할 때까지 캐시가 유지된다. 분산 캐시나 클러스터링 환경의 캐시는 애플리케이션보다 더 오래 유지될 수도 있다.<br>
 2차 캐시를 적용하면 엔티티 매니저를 통해 데이터를 조회할 때 우선 2차 캐시에서 찾고 없으면 데이터베이스에서 찾는다. 2차 캐시를 적절히 활용하면 데이터베이스 조회 횟수를 획기적으로 줄일 수 있다.<br>
@@ -327,6 +331,7 @@ JPA가 제공하는 비관적 락은 데이터베이스 트랜잭션 락 메커�
     * 영속성 유닛 범위의 캐시다.
     * 2차 캐시는 조회한 객체를 그대로 반환하는 것이 아닌 복사본을 만들어서 반환한다.
     * 데이터베이스 기본 키를 기준으로 캐시하지만 영속성 컨텍스트가 다르면 객체 동일성(a == b)을 보장하지 않는다.
+    
 ### JPA 2차 캐시 기능
 #### 캐시 모드 설정
 @Cacheable 어노테이션을 사용하면 된다. 캐시 모드는 javax.persistence.ShareCacheMode에 정의되어 있다. 보통 `ENABLE_SELECTIVE`를 사용한다.
@@ -366,24 +371,27 @@ JPA가 제공하는 비관적 락은 데이터베이스 트랜잭션 락 메커�
 
 #### 캐시 조회, 저장 방식 설정
 캐시를 무시하고 데이터베이스를 직접 조회하거나 캐시를 갱신하려면 캐시 조회모드와 캐시 보관 모드를 사용하면 된다.
+
 ```java
 em.setProperty("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
 ```
 
 * javax.persistence.cache.retrieveMode : 캐시 조회 모드 프로퍼티 이름
+
 * javax.persistence.cache.storeMode : 캐시 보관 모드 프로퍼티 이름
+
 * javax.persistence.CacheRetrieveMode : 캐시 조회 모드 설정 옵션
     * USE : 캐시에서 조회한다. 기본 값
     * BYPASS : 캐시를 무시하고 데이터베이스에 직접 접근한다.
+    
 * javax.persistence.CacheStoreMode : 캐시 보관 모드 설정 옵션
     * USE : 조회한 데이터를 캐시에 저장한다. 조회한 데이터가 이미 캐시에 있으면 최신 데이터로 갱신하지는 않는다. 트랜잭션을 커밋할 때 엔티티도 캐시에 저장한다. 기본 값 
     * BYPASS : 캐시에 저장하지 않는다.
     * REFERSH : USE 전략에 추가로 데이터베이스에서 조회한 엔티티를 최신 상태로 다시 캐시한다.
 
 ### 하이버네이트와 EHCACHE 적용
+
 * 하이버네이트가 지원하는 캐시
     * 엔티티 캐시 : 엔티티 단위로 캐시. 식별자로 엔티티를 조회하거나 컬렉션이 아닌 연관된 엔티티를 로딩할 때 사용
     * 컬렉션 캐시 : 엔티티와 연관된 컬렉션을 캐시. 컬렉션이 엔티티를 담고 있으면 식별자 값만 캐시.
     * 쿼리 캐시 : 쿼리와 파라미터 정보를 키로 사용해서 캐시. 결과가 엔티티면 식별자 값만 캐시.
-
-## 정리
