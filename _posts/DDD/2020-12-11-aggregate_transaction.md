@@ -153,3 +153,113 @@ public class JpaOrderRepository implements OrderRepository {
 첫 번째 트랜잭션을 시작할 때  오프라인 잠금을 선점하고, 마지막 트랜잭션에서 잠금을 해제한다. 잠금을 해제하기 전까지 다른 사용자는 잠금을 구할 수 없다.
 
 ![오프라인 선점 잠금 방식](../../assets/img/offline_lock.jpg)
+
+만약 위 사진에서 사용자가 과정 3의 수정 요청을 수행하지 않고 프로그램을 종료하게되면 감금이 해제되지 않기 때문에 다른 사용자는 영원히 잠금을 구할 수 없는 상황이 발생한다. 이런 사태를 예방하기 위해서 오프라인 선점 방식은 `잠금의 유효 시간`을 가져야 한다.<br>
+유효 시간이 지나면 `자동으로 잠금을 해제`해서 다른 사용자가 잠금을 일정 시간 후에 다시 구할 수 있도록 해야 한다.
+
+만약 사용자가 사정 폼을 연 뒤 잠금 유효 시간이 지나 잠금이 해제된 뒤에야 수정 요청을 하게되어 실패하게 되는 경우를 방지하기 위해서 일정 주기로 잠금 유효 시간을 증가시키는 방식도 있다. 예를 들어  수정 폼에서 1분 단위로 Ajax 호출을 해서 잠금 유효 시간을 1분씩 증가시키는 방법이 있다.ㄷ
+
+## 오프라인 선점 잠금을 위한 LockManager 인터페이스와 관련 클래스
+오프라인 선점 잠금은 크게 잠금 선점 시도, 잠금 확인, 잠금 해제, 락 유효 시간 연장의 네 가지 기능을 제공해야 한다.
+
+* LockManager 인터페이스와 LockId 클래스
+
+```java
+public interface LockManager {
+    LockId tryLock(String type, String id) throws LockException;
+    void checkLock(LockId lockId) throws LockException;
+    void releaseLock(LockId lockId) throws LockException;
+    void extendLockExpiration(LockId lockId, long inc) throws LockException;
+}
+
+public class LockId {
+    private String value;
+
+    public LockId(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}
+```
+
+오프라인 선점 잠금이 필요한 코드는 `LockManager#tryLock()`을 이용해서 잠금 선점을 시도한다. 잠금 선점에 성공하면 tryLock()은 LockId를 리턴한다.<br>
+이 LockId는 다음에 잠금을 해제할 때 사용한다. LockId가 없으면 잠금을 해제할 수 없으므로 LockId를 어딘가에 보관해야 한다.
+
+* 컨트롤러에서 오프라인 선점 기능을 통해 데이터 수정 폼에 동시에 접근을 제어하는 코드
+
+```java
+@RequestMapping("/some/edit/{id}")
+public String editForm(@PathVariable("id") Long id, ModelMap model) {
+    // 1. 오프라인 선점 잠금 시도
+    LockId lockId = lockManger.tryLock("data", id);
+    
+    // 2. 기능 실행
+    Data data = someDao.select(id);
+    model.addAttribute("data", data);
+    
+    // 3. 잠금 해제에 사용할 LockId를 모델에 추가
+    model.addAttribute("lockId", lockId);
+    
+    return "editForm"
+}
+```
+
+이 때 잠금에 실패하게 되면 LockException이 발생하는데, 이 때 알맞게 예외 처리를 하면 된다.
+
+* 잠금 해제 코드 예제
+
+```java
+@RequestMapping(value = "/some/edit/{id}", method = RequestMethod.POST)
+public String edit(@PathVariable("id") Long id, 
+                   @ModelAttribute("editReq") EditRequest editReq, 
+                   @RequestMapping("lid") String lockIdValue) {
+    // 1. 잠금 선점 확인
+    LockId lockId = new LockId(lockIdValue);
+    lockManager.checkLock(lockId);
+    
+    // 2. 기능 실행
+    someEditService.edit(editReq);
+    model.addAttribute("data", data);
+
+    // 3. 잠금 해제
+    lockManager.releaseLock(lockId);
+    
+    return "editSuccess";
+}
+```
+
+## DB를 이용한 한 LockManager 구현
+아래와 같이 잠금 정보를 저장하기 위한 별도의 테이블을 생성하여 관리한다.
+
+```sql
+CREATE TABLE LOCKS (
+    `type` varchar(255),
+    id varchar(255),
+    lockid varchar(255),
+    expiration_time datetime,
+    primary key (`type`, id)
+) character set utf8;
+```
+
+* locks 테이블의 데이터를 담을 LockData 클래스 예제
+
+```java
+public class LockData {
+    private String type;
+    private String id;
+    private String lockId;
+    private long expirationTime;
+    
+    public LockData(String type, String id, String lockId, long expirationTime) {
+        this.type = type;
+        this.id = id;
+        this.lockId = lockId;
+        this.expirationTime = expirationTime;
+    }
+    
+    //..
+}
+```
