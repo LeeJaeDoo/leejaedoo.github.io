@@ -8,10 +8,10 @@ image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 category: ddd
 tags:
-- ddd
-- 책 정리
-  paginate: true
-  comments: true
+  - ddd
+  - 책 정리
+paginate: true
+comments: true
 ---
 
 # 도메인 모델과 경계
