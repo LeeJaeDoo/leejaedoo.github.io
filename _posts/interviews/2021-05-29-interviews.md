@@ -8,9 +8,9 @@ image: https://leejaedoo.github.io/assets/img/interview.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/interview.jpeg
 category: interviews
 tags:
-- interviews
-  paginate: true
-  comments: true
+- interviews 
+paginate: true
+comments: true
 ---
 
 # 운영체제
