@@ -134,6 +134,12 @@ tags:
 # JAVA
 ## 기본
 ### JAVA 메모리 영역에 대해 설명해 주세요.
+* java 메모리 영역은 자바 애플리케이션을 실행할 때 사용되는 데이터 적재 영역을 말한다.
+#### Method Area
+#### Heap
+#### Stack
+#### PC Register
+#### Native Method Stack
 ### Java 접근 제어자에 대해서 각각 설명해 주세요.
 ### JVM의 구조에 대해서 설명해 주세요.
 ### Garbage Collector 에 대해서 설명해 주세요. 어떻게 동작하나요?
