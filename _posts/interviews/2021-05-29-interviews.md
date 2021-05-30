@@ -240,6 +240,11 @@ comments: true
 ### Servlet이 무엇인가요? (사실 이건 Java 섹션에 있는게 맞음..)
 ### Dispatcher-Servlet이란 무엇인가요?
 ### Spring MVC에서 HTTP 요청이 들어왔을 때의 흐름을 설명해 주세요.
+## Spring Batch
+### 일반적인 reader/processor/writer 구현방식과 하나의 tasklet 기반의 구현 방식(simpleJob)의 차이점은?
+* chunk단위의 트랜잭션 처리가 필요 없는 경우, 간단한 로직으로 구현이 가능한 경우, 데이터 양이 많지 않은 경우에 주로 하나의 tasklet을 커스텀하게 활용하는 방식을 활용.
+* 그 외에는 reader/processor/writer 별로 구현 로직을 분할하여 chunk 단위로 트랜잭션을 관리하도록 함으로써 대용량 처리에 용이하게 구현.
+
 # 인프라/클라우드/DevOps
 ## 기본
 ### 도커란 무엇인가요?
