@@ -83,6 +83,7 @@ comments: true
 ### ORM이란 무엇인가요?
 ### NoSQL이란 무엇인가요?
 ### 스키마란 무엇인가요?
+### 물리적 조인 방식의 종류는?
 ## 인덱스
 ### 인덱스란 무엇인가요? 어떻게 동작 하나요?
 ### 인덱스의 알고리즘에는 어떤 것들이 있나요?
@@ -222,6 +223,7 @@ comments: true
 ### Java의 Collection에 대해서 설명해 주세요.
 ### Array와 ArrayList의 차이점은 무엇인가요?
 ### char type과 string type으로 나뉘어져 있는 이유는 무엇인가요?
+### HashMap과 HashTable의 특성과 차이점은?
 # Spring Framework
 ## 기본
 ### Spring이란 무엇인가요?
