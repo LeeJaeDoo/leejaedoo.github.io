@@ -208,6 +208,8 @@ comments: true
 ### synchronized 키워드에 대해 설명해 주세요.
 ### volatile 키워드에 대해 설명해 주세요.
 ### final 키워드에 대해서 설명해주세요. 각각의 쓰임에 따라 어떻게 동작하나요?
+### HashTable vs HashMap vs ConcurrentHashMap
+### Fail-Safe Iterator vs Fail-Fast Iterator
 ## 클래스와 객체
 ### Wrapper Class란 무엇인가요?
 ### 클래스, 객체, 인스턴스 차이에 대해서 설명해 주세요.
