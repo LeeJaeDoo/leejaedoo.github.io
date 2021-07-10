@@ -215,10 +215,12 @@ comments: true
 #### Fail-Fast Iterator
 * Multi Thread 환경에서 반복문이 도는 중에 데이터가 변경될 경우 ConcurrentModificationException 예외를 뱉고 STOP
 * 중간에 fail이 발생될 경우 도중에 STOP
+* ex. HashMap, ArrayList
 
 #### Fail-Safe Iterator
 * Multi Thread 환경에서 반복문이 도는 중에 데이터가 변경될 경우 동시성을 보장하며 예외 없이 끝까지 돔. 최대한
 * 중간에 fail이 발생되더라도 STOP 없이 최대한 많은 개체를 성공시킴
+* ex. ConcurrentHashMap, CopyOnWriteArrayList
 
 ## 클래스와 객체
 ### Wrapper Class란 무엇인가요?
