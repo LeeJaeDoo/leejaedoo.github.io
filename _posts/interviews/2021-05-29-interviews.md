@@ -36,6 +36,8 @@ comments: true
 * 호출된 함수의 수행 결과 및 종료를 호출한 함수는 신경쓰지 않고 자기 할 일만 계속 하고 오직 호출된 함수만 관여하는 상태
 
 ### context switching이란?
+* CPU가 한 개의 Task(Process/Thread)를 실행하고 있는 상태에서 Interrupt 요청에 의해 다른 Task로 실행이 전환되는 과정에서 기존의 Task 상태 및 Register 값들에 대한 정보(Context)를 저장하고 새로운 Task의 Context 정보로 교체하는 작업을 말한다.
+
 ## 메모리
 ### 프로세스에 할당되는 메모리의 각 영역에 대해서 설명해 주세요.
 ### 메모리 구조의 순서가 어떻게 되는가? CPU에서 가까운 순으로 말해보시오.
