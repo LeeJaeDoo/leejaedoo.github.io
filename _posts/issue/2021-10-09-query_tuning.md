@@ -1,15 +1,16 @@
 ---
-date: 2021-10-09 20:40:40
+date: 2021-10-09 01:40:40
 layout: post
 title: 회원 profile 중복 체크 query 개선 히스토리
 subtitle: 회원 profile 중복 체크 query 개선 히스토리
 description: 회원 profile 중복 체크 query 개선 히스토리
-image: https://leejaedoo.github.io/assets/img/jpa.png
-optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
+image: https://leejaedoo.github.io/assets/img/sql.jpg
+optimized_image: https://leejaedoo.github.io/assets/img/sql.jpg
 category: issue
 tags:
 - issue
-- jpa 
+- sql
+- querydsl
 paginate: true
 comments: true
 ---
@@ -166,4 +167,5 @@ or조건으로 이어진 query이기 때문에 full scan 탈 수 밖에 없었�
 1. or 조건절들을 다 쪼개서 개별 query로 조회
 2. union 으로 처리
 
-가 있는데 여기선 1번을 활용하여 기본 where 조건절이었던 mallNo와 함께 복합 index 형태로 조회되도록 함으로써 개선할 수 있었다.
+가 있는데 여기선 1번을 활용하여 기본 where 조건절이었던 mallNo와 함께 복합 index 형태로 조회되도록 함으로써 개선할 수 있었다.<br>
+다 쪼갠 로직을 더 깔끔하게 구현해볼 수 있는 방법은 더 고민해봐야 할 것 같다.
