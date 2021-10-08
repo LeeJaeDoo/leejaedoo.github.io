@@ -88,8 +88,6 @@ explain으로 확인해보면 `mb_member_mall_no_idx` index만 타고 제대로 
         }
 
         return from(member).where(builder)
-                           // .where(member.memberStatus.notIn(Arrays.asList(MemberStatus.NOT_REJOINABLE_EXPELLED,
-                           // MemberStatus.NOT_REJOINABLE_LEAVE)))
                            .where(member.mall.mallNo.eq(mallNo))
                            .where(member.memberStatus.ne(MemberStatus.EXPELLED))
                            .fetch();
