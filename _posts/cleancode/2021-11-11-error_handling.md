@@ -9,8 +9,8 @@ optimized_image: https://leejaedoo.github.io/assets/img/cleancode.png
 category: cleancode
 tags:
 - cleancode
-  paginate: true
-  comments: true
+paginate: true
+comments: true
 ---
 
 깨끗한 코드는 오류 처리 코드가 좌우한다고 해도 과언이 아니다. 왜냐하면 여기저기 흩어진 오류 처리 코드로 인해 실제 코드 파악이 어려워질 수 있기 때문이다.
