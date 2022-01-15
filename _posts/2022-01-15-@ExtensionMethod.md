@@ -10,9 +10,9 @@ category: issue
 tags:
 - issue
 - lombok
-- extension
-  paginate: true
-  comments: true
+- extension 
+paginate: true
+comments: true
 ---
 
 # 개요
