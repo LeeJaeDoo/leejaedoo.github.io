@@ -4,8 +4,8 @@ layout: post
 title: @ExtensionMethod란?
 subtitle: @ExtensionMethod란?
 description: @ExtensionMethod란?
-image: https://leejaedoo.github.io/assets/img/sql.jpg
-optimized_image: https://leejaedoo.github.io/assets/img/sql.jpg
+image: https://leejaedoo.github.io/assets/img/lombok.jpeg
+optimized_image: https://leejaedoo.github.io/assets/img/lombok.jpeg
 category: issue
 tags:
 - issue
