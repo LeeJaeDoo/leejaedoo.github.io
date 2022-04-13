@@ -6,7 +6,7 @@ subtitle: 3. 영속성 관리
 description: 3. 영속성 관리
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

@@ -6,7 +6,7 @@ subtitle: 8. 리팩토링, 테스팅, 디버깅
 description: 8. 리팩토링, 테스팅, 디버깅
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

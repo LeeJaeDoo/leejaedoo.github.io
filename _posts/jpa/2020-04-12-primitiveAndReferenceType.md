@@ -6,7 +6,7 @@ subtitle: 원시타입과 참조타입 & boxing과 unboxing
 description: 원시타입(primitive type)과 참조타입(reference type or wrapper class) 그리고 & boxing과 unboxing
 image: https://leejaedoo.github.io/assets/img/java.jpg
 optimized_image: https://leejaedoo.github.io/assets/img/java.jpg
-category: java
+categories: java
 tags:
   - java
   - 개념

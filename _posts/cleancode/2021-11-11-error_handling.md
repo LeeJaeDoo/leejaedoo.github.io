@@ -6,7 +6,7 @@ subtitle: 7. 오류 처리
 description: 7. 오류 처리
 image: https://leejaedoo.github.io/assets/img/cleancode.png
 optimized_image: https://leejaedoo.github.io/assets/img/cleancode.png
-category: cleancode
+categories: cleancode
 tags:
 - cleancode
 paginate: true

@@ -6,7 +6,7 @@ subtitle: 9. 도메인 모델과 BOUNDED CONTEXT
 description: 9. 도메인 모델과 BOUNDED CONTEXT
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-category: ddd
+categories: ddd
 tags:
   - ddd
   - 책 정리

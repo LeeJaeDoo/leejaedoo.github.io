@@ -6,7 +6,7 @@ subtitle: 5. 리소스를 사용한 작업
 description: 5. 리소스를 사용한 작업
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-category: java
+categories: java
 tags:
   - java
   - lambda
@@ -210,4 +210,3 @@ Locker 클래스에서 Lock 인터페이스에서 동작할 번거로운 작업�
 # 정리
 우리는 자동 GC에 완전히 의존할 수는 없다.(특히 외부 리소스 활용할 경우)<br>
 execute around method 패턴은 실행 flow에 대한 세밀한 제어와 외부 리소스를 해제하는데 도움을 준다. `람다 표현식은 이 execute around pattern을 구현하는데 적합하다.`<br>
- 

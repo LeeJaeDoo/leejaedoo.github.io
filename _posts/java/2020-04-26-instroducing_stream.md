@@ -6,7 +6,7 @@ subtitle: 4. 스트림 소개
 description: 4. 스트림 소개
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

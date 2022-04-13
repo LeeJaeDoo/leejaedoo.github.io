@@ -6,7 +6,7 @@ subtitle: 1. 헬로, 람다 표현식
 description: 1. 헬로, 람다 표현식
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-category: java
+categories: java
 tags:
   - java
   - lambda
@@ -33,4 +33,3 @@ comments: true
 #### 더 직관적이다.
 함수형 코드는 사람이 문제를 설명하는 방식대로 코드를 작성하면 된다.
 
-          

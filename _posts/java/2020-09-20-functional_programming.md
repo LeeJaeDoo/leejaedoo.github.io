@@ -6,7 +6,7 @@ subtitle: 13. 함수형 관점으로 생각하기
 description: 13. 함수형 관점으로 생각하기
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

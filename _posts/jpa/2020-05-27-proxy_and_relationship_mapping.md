@@ -6,7 +6,7 @@ subtitle: 8. 프록시와 연관관계 관리
 description: 8. 프록시와 연관관계 관리
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

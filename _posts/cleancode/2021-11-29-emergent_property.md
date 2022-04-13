@@ -6,7 +6,7 @@ subtitle: 12. 창발성
 description: 12. 창발성
 image: https://leejaedoo.github.io/assets/img/cleancode.png
 optimized_image: https://leejaedoo.github.io/assets/img/cleancode.png
-category: cleancode
+categories: cleancode
 tags:
 - cleancode 
 paginate: true

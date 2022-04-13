@@ -6,7 +6,7 @@ subtitle: 3. 애그리거트
 description: 3. 애그리거트
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-category: ddd
+categories: ddd
 tags:
   - ddd
   - 책 정리

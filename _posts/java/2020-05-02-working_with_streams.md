@@ -6,7 +6,7 @@ subtitle: 5. 스트림 활용
 description: 5. 스트림 활용
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

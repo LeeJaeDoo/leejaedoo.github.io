@@ -6,7 +6,7 @@ subtitle: 12. 스프링 데이터 JPA
 description: 12. 스프링 데이터 JPA
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

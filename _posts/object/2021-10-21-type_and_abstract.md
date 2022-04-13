@@ -6,7 +6,7 @@ subtitle: 3. 타입과 추상화
 description: 3. 타입과 추상화
 image: https://leejaedoo.github.io/assets/img/object.png
 optimized_image: https://leejaedoo.github.io/assets/img/object.png
-category: object
+categories: object
 tags:
 - object
 - 책 정리

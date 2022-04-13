@@ -6,7 +6,7 @@ subtitle: 14. 컬렉션과 부가 기능
 description: 14. 컬렉션과 부가 기능 
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

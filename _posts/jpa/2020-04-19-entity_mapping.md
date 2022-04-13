@@ -6,7 +6,7 @@ subtitle: 4. 엔티티 매핑
 description: 4. 엔티티 매핑
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

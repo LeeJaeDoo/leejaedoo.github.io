@@ -6,7 +6,7 @@ subtitle: 13. 웹 애플리케이션과 영속성 관리
 description: 13. 웹 애플리케이션과 영속성 관리
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-category: jpa
+categories: jpa
 tags:
   - jpa
   - orm

@@ -6,7 +6,7 @@ subtitle: 6. 객체와 자료구조
 description: 6. 객체와 자료구조
 image: https://leejaedoo.github.io/assets/img/cleancode.png
 optimized_image: https://leejaedoo.github.io/assets/img/cleancode.png
-category: cleancode
+categories: cleancode
 tags:
 - cleancode
 paginate: true

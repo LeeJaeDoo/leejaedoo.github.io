@@ -6,7 +6,7 @@ subtitle: 4. 람다 표현식을 이용한 설계
 description: 4. 람다 표현식을 이용한 설계
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-category: java
+categories: java
 tags:
   - java
   - lambda

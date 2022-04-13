@@ -6,7 +6,7 @@ subtitle: 회원 profile 중복 체크 query 개선 히스토리
 description: 회원 profile 중복 체크 query 개선 히스토리
 image: https://leejaedoo.github.io/assets/img/sql.jpg
 optimized_image: https://leejaedoo.github.io/assets/img/sql.jpg
-category: issue
+categories: issue
 tags:
 - issue
 - sql

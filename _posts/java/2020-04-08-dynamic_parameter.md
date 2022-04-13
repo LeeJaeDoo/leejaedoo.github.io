@@ -6,7 +6,7 @@ subtitle: 2. 동작 파라미터화 코드 전달하기
 description: 2. 동작 파라미터화 코드 전달하기
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

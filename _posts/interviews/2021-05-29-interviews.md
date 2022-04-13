@@ -6,7 +6,7 @@ subtitle: 면접 질문 리스트
 description: 면접 질문 리스트
 image: https://leejaedoo.github.io/assets/img/interview.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/interview.jpeg
-category: interviews
+categories: interviews
 tags:
 - interviews 
 paginate: true

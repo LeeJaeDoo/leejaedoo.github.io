@@ -6,7 +6,7 @@ subtitle: 6. 스트림으로 데이터 수집
 description: 6. 스트림으로 데이터 수집
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-category: java
+categories: java
 tags:
   - java
   - 책 정리

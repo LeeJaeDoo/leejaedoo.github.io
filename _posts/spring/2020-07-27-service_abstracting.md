@@ -6,7 +6,7 @@ subtitle: 5. 서비스 추상화
 description: 5. 서비스 추상화
 image: https://leejaedoo.github.io/assets/img/spring.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/spring.jpeg
-category: spring
+categories: spring
 tags:
   - spring
   - 책 정리

@@ -6,7 +6,7 @@ subtitle: 2. 이상한 나라의 객체
 description: 2. 이상한 나라의 객체
 image: https://leejaedoo.github.io/assets/img/object.png
 optimized_image: https://leejaedoo.github.io/assets/img/object.png
-category: object
+categories: object
 tags:
 - object
 - 책 정리

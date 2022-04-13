@@ -6,7 +6,7 @@ subtitle: 1. 오브젝트와 의존관계
 description: 1. 오브젝트와 의존관계
 image: https://leejaedoo.github.io/assets/img/spring.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/spring.jpeg
-category: spring
+categories: spring
 tags:
   - spring
   - 책 정리

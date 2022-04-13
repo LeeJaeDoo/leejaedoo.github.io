@@ -6,7 +6,7 @@ subtitle: 7. 재귀 호출 최적화
 description: 7. 재귀 호출 최적화
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-category: java
+categories: java
 tags:
   - java
   - lambda
