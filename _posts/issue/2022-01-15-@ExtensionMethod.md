@@ -6,7 +6,7 @@ subtitle: \@ExtensionMethod란??
 description: \@ExtensionMethod란??
 image: https://leejaedoo.github.io/assets/img/lombok.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lombok.jpeg
-categories: issue
+category: issue
 tags:
 - issue
 - lombok
@@ -70,7 +70,7 @@ numbers.sumByLong { it }
 public class CollectionUtils {
     
     public static Map<Long, Map<String, Long>> toSumNestedMap(Map<Long, Map<String, Long>> m1, Map<Long, Map<String, Long>> m2) { 
-        Map<Long, Map<String Long>> mergedMap = SerializationUtils.clone(new ConcurrentHashMap<>(m1));  //  deep copy
+        Map<Long, Map<String, Long>> mergedMap = SerializationUtils.clone(new ConcurrentHashMap<>(m1));  //  deep copy
       
         Stream.of(mergedMap, m2)
               .flatMap(map -> map.entrySet().stream())
