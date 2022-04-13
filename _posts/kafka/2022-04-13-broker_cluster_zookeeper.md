@@ -9,9 +9,6 @@ optimized_image: https://leejaedoo.github.io/assets/img/kafka.png
 category: kafka
 tags:
 - kafka
-- broker
-- cluster
-- zookeeper 
 paginate: true
 comments: true
 ---
