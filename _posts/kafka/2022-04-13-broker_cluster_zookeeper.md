@@ -2,8 +2,8 @@
 date: 2022-04-13 01:40:40
 layout: post
 title: 카프카 브로커, 클러스터, 주키퍼에 대해서
-subtitle: 카프카 브로커, 클러스터, 주키퍼에 대해서
-description: 카프카 브로커, 클러스터, 주키퍼에 대해서
+subtitle: 브로커, 클러스터, 주키퍼
+description: 브로커, 클러스터, 주키퍼 간단 요약
 image: https://leejaedoo.github.io/assets/img/kafka.png
 optimized_image: https://leejaedoo.github.io/assets/img/kafka.png
 category: kafka
