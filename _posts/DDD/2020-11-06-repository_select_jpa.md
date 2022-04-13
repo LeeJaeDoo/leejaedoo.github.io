@@ -6,7 +6,7 @@ subtitle: 5. 리포지터리의 조회 기능(JPA 중심)
 description: 5. 리포지터리의 조회 기능(JPA 중심)
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리

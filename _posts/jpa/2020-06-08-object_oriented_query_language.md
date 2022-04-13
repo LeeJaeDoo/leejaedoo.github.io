@@ -6,7 +6,7 @@ subtitle: 10. 객체지향 쿼리 언어
 description: 10. 객체지향 쿼리 언어
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-categories: jpa
+category: jpa
 tags:
   - jpa
   - orm

@@ -6,7 +6,7 @@ subtitle: 11. CompletableFuture 조합할 수 있는 비동기 프로그래밍
 description: 11. CompletableFuture 조합할 수 있는 비동기 프로그래밍
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-categories: java
+category: java
 tags:
   - java
   - 책 정리

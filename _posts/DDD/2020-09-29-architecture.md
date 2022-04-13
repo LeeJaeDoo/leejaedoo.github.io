@@ -6,7 +6,7 @@ subtitle: 2. 아키텍처 개요
 description: 2. 아키텍처 개요
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리

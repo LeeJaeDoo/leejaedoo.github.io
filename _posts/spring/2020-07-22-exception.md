@@ -6,7 +6,7 @@ subtitle: 4. 예외
 description: 4. 예외
 image: https://leejaedoo.github.io/assets/img/spring.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/spring.jpeg
-categories: spring
+category: spring
 tags:
   - spring
   - 책 정리

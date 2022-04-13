@@ -6,7 +6,7 @@ subtitle: Jackson과 ObjectMapper의 기능
 description: Jackson과 ObjectMapper를 통해 클래스 객체를 쉽게 json 형태로 변환시킬 수 있다.
 image: https://leejaedoo.github.io/assets/img/springboot.jpg
 optimized_image: https://leejaedoo.github.io/assets/img/springboot.jpg
-categories: spring
+category: spring
 tags:
   - springboot
   - library

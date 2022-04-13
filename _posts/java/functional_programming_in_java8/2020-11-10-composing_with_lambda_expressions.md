@@ -6,7 +6,7 @@ subtitle: 8. 람다 표현식의 조합
 description: 8. 람다 표현식의 조합
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-categories: java
+category: java
 tags:
   - java
   - lambda

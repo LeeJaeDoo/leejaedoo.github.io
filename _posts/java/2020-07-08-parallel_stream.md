@@ -6,7 +6,7 @@ subtitle: 7. 병렬 데이터 처리와 성능
 description: 7. 병렬 데이터 처리와 성능
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-categories: java
+category: java
 tags:
   - java
   - 책 정리

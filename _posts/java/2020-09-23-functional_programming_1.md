@@ -6,7 +6,7 @@ subtitle: 14. 함수형 프로그래밍 기법
 description: 14. 함수형 프로그래밍 기법
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-categories: java
+category: java
 tags:
   - java
   - 책 정리

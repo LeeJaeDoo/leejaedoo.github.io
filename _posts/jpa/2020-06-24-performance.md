@@ -6,7 +6,7 @@ subtitle: 15. 고급 주제와 성능 최적화
 description: 15. 고급 주제와 성능 최적화
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-categories: jpa
+category: jpa
 tags:
   - jpa
   - orm

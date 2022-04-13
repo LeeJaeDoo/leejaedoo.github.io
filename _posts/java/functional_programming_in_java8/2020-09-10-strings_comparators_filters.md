@@ -6,7 +6,7 @@ subtitle: 3. String, Comparator 그리고 filter
 description: 3. String, Comparator 그리고 filter
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-categories: java
+category: java
 tags:
   - java
   - lambda

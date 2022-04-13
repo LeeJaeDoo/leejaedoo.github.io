@@ -6,7 +6,7 @@ subtitle: 6. 다양한 연관관계 매핑
 description: 6. 다양한 연관관계 매핑
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-categories: jpa
+category: jpa
 tags:
   - jpa
   - orm

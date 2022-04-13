@@ -6,7 +6,7 @@ subtitle: 16. 트랜잭션과 락, 2차 캐시
 description: 16. 트랜잭션과 락, 2차 캐시
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-categories: jpa
+category: jpa
 tags:
   - jpa
   - orm

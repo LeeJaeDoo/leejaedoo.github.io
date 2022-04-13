@@ -6,7 +6,7 @@ subtitle: 6. 레이지
 description: 6. 레이지
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-categories: java
+category: java
 tags:
   - java
   - lambda

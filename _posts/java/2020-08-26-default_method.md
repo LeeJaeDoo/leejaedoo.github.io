@@ -6,7 +6,7 @@ subtitle: 9. 디폴트 메서드
 description: 9. 디폴트 메서드
 image: https://leejaedoo.github.io/assets/img/java8.png
 optimized_image: https://leejaedoo.github.io/assets/img/java8.png
-categories: java
+category: java
 tags:
   - java
   - 책 정리

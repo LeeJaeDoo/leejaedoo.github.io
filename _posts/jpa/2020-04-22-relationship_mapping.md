@@ -6,7 +6,7 @@ subtitle: 5. 연관관계 매핑 기초
 description: 5. 연관관계 매핑 기초
 image: https://leejaedoo.github.io/assets/img/jpa.png
 optimized_image: https://leejaedoo.github.io/assets/img/jpa.png
-categories: jpa
+category: jpa
 tags:
   - jpa
   - orm

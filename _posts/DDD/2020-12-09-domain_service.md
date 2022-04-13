@@ -6,7 +6,7 @@ subtitle: 7. 도메인 서비스
 description: 7. 도메인 서비스
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리

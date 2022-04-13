@@ -6,7 +6,7 @@ subtitle: 1. 협력하는 객체들의 공동체
 description: 1. 협력하는 객체들의 공동체
 image: https://leejaedoo.github.io/assets/img/object.png
 optimized_image: https://leejaedoo.github.io/assets/img/object.png
-categories: object
+category: object
 tags:
   - object
   - 책 정리

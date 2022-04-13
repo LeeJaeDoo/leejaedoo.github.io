@@ -6,7 +6,7 @@ subtitle: 카프카 브로커, 클러스터, 주키퍼에 대해서
 description: 카프카 브로커, 클러스터, 주키퍼에 대해서
 image: https://leejaedoo.github.io/assets/img/kafka.png
 optimized_image: https://leejaedoo.github.io/assets/img/kafka.png
-categories: kafka
+category: kafka
 tags:
 - kafka
 - broker

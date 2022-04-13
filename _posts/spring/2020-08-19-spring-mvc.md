@@ -6,7 +6,7 @@ subtitle: 12. 스프링 웹 기술과 스프링 MVC
 description: 12. 스프링 웹 기술과 스프링 MVC
 image: https://leejaedoo.github.io/assets/img/spring.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/spring.jpeg
-categories: spring
+category: spring
 tags:
   - spring
   - 책 정리

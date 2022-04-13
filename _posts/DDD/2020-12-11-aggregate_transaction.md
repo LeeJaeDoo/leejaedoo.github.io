@@ -6,7 +6,7 @@ subtitle: 8. 애그리거트 트랜잭션 관리
 description: 8. 애그리거트 트랜잭션 관리
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리

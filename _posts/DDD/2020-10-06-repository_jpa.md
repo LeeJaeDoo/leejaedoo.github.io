@@ -6,7 +6,7 @@ subtitle: 4. 리포지터리와 모델구현(JPA 중심)
 description: 4. 리포지터리와 모델구현(JPA 중심)
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리

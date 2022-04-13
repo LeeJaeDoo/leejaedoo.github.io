@@ -6,7 +6,7 @@ subtitle: 14. 점진적인 개선
 description: 14. 점진적인 개선
 image: https://leejaedoo.github.io/assets/img/cleancode.png
 optimized_image: https://leejaedoo.github.io/assets/img/cleancode.png
-categories: cleancode
+category: cleancode
 tags:
 - cleancode
 paginate: true

@@ -6,7 +6,7 @@ subtitle: 2. 컬렉션의 사용
 description: 2. 컬렉션의 사용
 image: https://leejaedoo.github.io/assets/img/lambda.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lambda.jpeg
-categories: java
+category: java
 tags:
   - java
   - lambda

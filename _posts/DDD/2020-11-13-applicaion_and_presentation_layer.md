@@ -6,7 +6,7 @@ subtitle: 6. 응용 서비스와 표현 영역
 description: 6. 응용 서비스와 표현 영역
 image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/ddd_start.jpeg
-categories: ddd
+category: ddd
 tags:
   - ddd
   - 책 정리
