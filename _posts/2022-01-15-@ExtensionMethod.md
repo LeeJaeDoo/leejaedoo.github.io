@@ -1,9 +1,9 @@
 ---
 date: 2022-01-15 10:40:40
 layout: post
-title: \@ExtensionMethod란?
-subtitle: \@ExtensionMethod란?
-description: \@ExtensionMethod란?
+title: \@ExtensionMethod란??
+subtitle: \@ExtensionMethod란??
+description: \@ExtensionMethod란??
 image: https://leejaedoo.github.io/assets/img/lombok.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lombok.jpeg
 category: issue
