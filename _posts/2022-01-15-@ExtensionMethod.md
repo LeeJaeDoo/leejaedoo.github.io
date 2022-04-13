@@ -6,7 +6,7 @@ subtitle: \@ExtensionMethod란??
 description: \@ExtensionMethod란??
 image: https://leejaedoo.github.io/assets/img/lombok.jpeg
 optimized_image: https://leejaedoo.github.io/assets/img/lombok.jpeg
-category: issue
+categories: issue
 tags:
 - issue
 - lombok
