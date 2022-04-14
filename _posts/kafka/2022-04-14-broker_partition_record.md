@@ -138,7 +138,7 @@ ISR그룹에서 제외된 파티션은 복제가 모두 이뤄지지 못한 파�
       <td>unclean.leader.election.enable=true</td>
       <td>리더 파티션 선출 후보에서 제외되지 않음</td>
       <td>서비스가 중단되지 않음.</td>
-      <td>데이터 유실될 수 있음.</td>
+      <td>데이터 복제에 실패하여 리더 파티션을 다시 선출하는 과정에서 데이터 유실될 수 있음.</td>
     </tr>
     <tr>
       <td>unclean.leader.election.enable=false</td>
