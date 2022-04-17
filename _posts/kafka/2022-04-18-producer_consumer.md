@@ -11,8 +11,8 @@ tags:
 - kafka
 - producer
 - consumer
-  paginate: true
-  comments: true
+paginate: true
+comments: true
 ---
 
 # 프로듀서/컨슈머 데이터 유실이나 중복, 순서가 바뀌는 케이스 정리
