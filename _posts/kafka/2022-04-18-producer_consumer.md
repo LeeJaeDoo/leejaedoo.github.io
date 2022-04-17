@@ -52,6 +52,26 @@ comments: true
 
 프로듀서에서 브로커로 전송되는 데이터에 기존의 PID뿐만 아니라 `시퀀스 넘버`를 부여하여 이미 한번 브로커로 전송됐던 같은 데이터라도 다른 시퀀스 넘버로 구분함으로써 `데이터의 중복 전송을 방지`할 수 있다.
 
+<table>
+  <thead>
+    <tr>
+      <th>멱등성 옵션 설정</th>
+      <th>데이터 중복 전송 가능 여부</th>  
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>enable.idempotence=true</td>
+      <td>X</td>  
+    </tr>
+    <tr>
+      <td>enable.idempotence=false</td>
+      <td>O</td>
+    </tr>
+  </tbody>
+</table>
+
+
 ### 데이터 전송 여부 확인 방식
 
 <table>
