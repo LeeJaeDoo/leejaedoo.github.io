@@ -468,3 +468,6 @@ public void customListener(String data) {
     // customContainerFactory 옵션을 커스텀 컨테이너 팩토리로 설정하여 사용한다.
 }
 ```
+
+### 참고
+아파치 카프카 애플리케이션 프로그래밍 with 자바
