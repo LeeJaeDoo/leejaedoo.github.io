@@ -36,6 +36,42 @@ ApplicationEventPublisher는 외부에서 주입된 빈이 아닌 spring context
 
 따라서 아래와 같이 직접 test mock bean을 직접 생성하여 주입받아 사용해야 한다.
 
+* 실행 코드
+
+```java
+
+@Service
+@RequiredArgsConstructor
+public class ProductCommand implements ProductUseCase {
+
+    private final ProductRepository productRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Override
+    @Transactional
+    public void save(ProductEvent event) {
+        
+        Product product = Product.create(event);
+        if (!productRepository.existsById(event.getId())) {
+            eventPublisher.publishEvent(ProductHistoryEvent.of(event.getUserId()));
+        }
+
+        if (!ObjectUtils.isEmpty(event.getName())) {
+            eventPublisher.publishEvent(ProductHistoryEvent.of(event.getUserId()));
+        }
+
+        if (!ObjectUtils.isEmpty(event.getAmount())) {
+            eventPublisher.publishEvent(ProductHistoryEvent.of(event.getUserId()));
+        }
+
+        productRepository.save(product);
+    }
+}
+
+```
+
+* 테스트 코드
+
 ```java
 @ExtendWith(SpringExtension.class)
 @Import(ProductCommand.class)
@@ -52,13 +88,14 @@ class ProductCommandTest {
     public void test() {
         //given
         Product product = mock(Product.class);
+        given(productRepository.existsById(any())).willReturn(false);
         given(product.getName()).willReturn(null);
         given(product.getId()).willReturn("ID1");
         //when
         productCommand.save(product);
         //then
         verify(eventPublisher, times(1)).publishEvent(any(Product.class));
-        verify(productRepository, times(1)).save(any);
+        verify(productRepository, times(1)).save(any());
     }
 
     @TestConfiguration
