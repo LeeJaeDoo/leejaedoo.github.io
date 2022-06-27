@@ -32,7 +32,7 @@ Actually, there were zero interactions with this mock.
 
 왜냐하면 @ExtendWith(SpringExtension.class) 형태로 특정 객체의 TEST CODE를 작성할 경우,
 
-ApplicationEventPublisher는 spring context에서 다루는 빈이 아니기 때문에 mockBean을 생성할 수 없다.
+ApplicationEventPublisher는 일반적으로 외부에서 주입된 빈이 아닌 spring context 자체에서 다루는 빈이기 때문에 mockBean을 생성할 수 없다.
 
 따라서 아래와 같이 직접 test mock bean을 생성하여 주입받아 사용해야 한다.
 
