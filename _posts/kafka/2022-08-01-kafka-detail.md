@@ -1,7 +1,7 @@
 ---
-date: 2022-08-01 15:36:40
+date: 2022-08-01 13:36:40
 layout: post
-title: kafka 적용 시 고려해야할 점(1)
+title: kafka 설계 시 고려해야할 점(1)
 subtitle: 카프카 Messaging sementics
 description: kafka Messaging sementics
 image: https://leejaedoo.github.io/assets/img/kafka.png
