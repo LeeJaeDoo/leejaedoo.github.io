@@ -85,6 +85,7 @@ consumer는 결국 중복으로 subscribe된 메세지에 대한 처리를 실�
 1. 임의의 event-id를 기준으로 동일한 message에 대해서 insert는 skip
 2. update 처리인 경우는 메세지 순서를 고려해야 하기 때문에 producer에서 메세지 publish시점 정보를 담은 publish_at 정보를 활용, 순서를 검증할 수 있다.
 3. consumer offset commit 방식은 수동으로 설정하여 로직이 성공했을 떄 수동으로 offset commit을 하는 방식을 적용한다.(ex. commitSync(), acknowledge())
+
 ### producer 옵션 설정
 
 #### ack
