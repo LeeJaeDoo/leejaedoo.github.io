@@ -149,7 +149,7 @@ while (true) {
 > 자세한 건 [exactly-once_transaction_구현](https://dhkdn9192.github.io/apache-kafka/kakfa-exactly-once-delivery/#4-producer-side%EC%9D%98-exactly-once-%EA%B5%AC%ED%98%84) 에서 확인
 
 # 정리
-exactly-once가 가장 이상적인 메시지 처리 방식이지만 난이도와 비용으로 인해 `at-least-once로 타협`하는 경우가 보편적이다. Kafka의 경우 at-least-once를 보장하며 일정 버전 이후에서만 옵션을 통해 exactly-once를 적용할 수 있다.
+exactly-once가 가장 이상적인 메시지 처리 방식이지만 난이도와 비용으로 인해 `at-least-once로 타협`하는 경우가 보편적이다. Kafka의 경우 at-least-once를 보장하며 일정 버전 이후에서만 옵션을 통해 exactly-once를 적용할 수 있다..
 
 # Reference
 [메세지 중복 처리 방안](https://camel-context.tistory.com/54)
