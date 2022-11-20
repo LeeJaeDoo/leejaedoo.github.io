@@ -7,6 +7,8 @@ description: kafka Messaging sementics
 image: https://leejaedoo.github.io/assets/img/kafka.png
 optimized_image: https://leejaedoo.github.io/assets/img/kafka.png
 category: kafka
+paginate: true
+comments: true
 tags:
 - kafka
 - producer
@@ -14,8 +16,6 @@ tags:
 - spring
 - listener
 - commit
-paginate: true
-comments: true
 ---
 
 # 카프카 Messaging sementics
