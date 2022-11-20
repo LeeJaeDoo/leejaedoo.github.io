@@ -1,5 +1,5 @@
 ---
-date: 2022-11-20 10:36:40
+date: 2022-11-20 09:36:40
 layout: post
 title: kafka 설계 시 고려해야할 점(2)
 subtitle: 카프카 consumer offset reset 전략
