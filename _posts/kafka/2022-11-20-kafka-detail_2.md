@@ -82,6 +82,8 @@ kafka consumer 설정 시에 위와 같이 처리함은 consumer에서의 offset
 
 즉, offset commit 실패 후 다음 순서의 offset commit이 성공했다면 적용되지 않는다.
 
+덧붙여서 새로운 consumer group을 생성하여 이미 데이터가 담겨있는 partition에 할당된다면 최초의 offset부터 데이터를 가져오게 되므로, 만약 실시간 성의 데이터가 필요한 consumer라면 문제가 될 여지가 있다. 실시간으로 consumer에서 처리되야하는 데이터라면 latest로 설정해야 한다.
+
 > consumer listener parameter로 Consumer interface에서 `Consumer.seekToBeginning()`를 활용하면 코드 상으로 offset reset 옵션을 earliest로 가져갈 수 있다.
 
 #### Consumer.seek()
