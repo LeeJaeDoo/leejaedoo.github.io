@@ -23,7 +23,7 @@ comments: true
 그렇게 로컬 개발을 끝내고 staging 환경에서 테스트를 진행하기 위해 DDL 생성을 했더니 아래와 같은 에러 로그를 마주할 수 있었다.
 
 ```log
-2023-02-15 11:44:50.221 [52164_ClusterManager] [ERROR] org.springframework.scheduling.quartz.LocalDataSourceJobStore : ClusterManager: Error managing cluster: Failure obtaining db row lock: Table 'exp_api.QRTZ_LOCKS' doesn't exist
+2023-02-15 11:44:50.221 [52164_ClusterManager] [ERROR] org.springframework.scheduling.quartz.LocalDataSourceJobStore : ClusterManager: Error managing cluster: Failure obtaining db row lock: Table '****.QRTZ_LOCKS' doesn't exist
 org.quartz.impl.jdbcjobstore.LockException: Failure obtaining db row lock: Table '****.QRTZ_LOCKS' doesn't exist
 	at org.quartz.impl.jdbcjobstore.StdRowLockSemaphore.executeSQL(StdRowLockSemaphore.java:184)
 	at org.quartz.impl.jdbcjobstore.DBSemaphore.obtainLock(DBSemaphore.java:113)
