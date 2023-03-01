@@ -96,7 +96,7 @@ lower_case_table_names 란을 보면 amazon rds는 lower_case_table_names 설정
 그러면 어쩔 수 없이 대소문자 구분을 하지 않도록 lower_case_table_names 설정을 1로 변경하려고 했다. 그러나 또 다시 문제가 발생한다.
 
 ```log
-The parameter value for lower_case_table_names can't be changed for parameter group one-line-rds, because it is associated with one or more MySQL 8.0 DB instances. (Service: AmazonRDS; Status Code: 400; Error Code: InvalidParameterCombination; Request ID: *****; Proxy: null)
+The parameter value for lower_case_table_names can't be changed for parameter group ****, because it is associated with one or more MySQL 8.0 DB instances. (Service: AmazonRDS; Status Code: 400; Error Code: InvalidParameterCombination; Request ID: *****; Proxy: null)
 ```
 
 이미 생성된 인스턴스에서 lower_case_table_names 설정을 바꾸려면 기존 파라미터 수정 방식이 아닌 새로운 파라미터 그룹을 생성해야 한다고 한다.
