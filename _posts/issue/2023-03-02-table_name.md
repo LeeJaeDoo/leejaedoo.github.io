@@ -1,5 +1,5 @@
 ---
-date: 2023-02-28 22:36:40
+date: 2023-03-02 11:36:40
 layout: post
 title: mysql 테이블명 대소문자 구분 설정
 subtitle: mysql 테이블명 대소문자 구분 설정
