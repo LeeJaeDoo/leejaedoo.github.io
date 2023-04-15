@@ -56,6 +56,8 @@ public class TriggerBuilder<T extends Trigger> {
 
 #### 1번
 
+trigger마다 발생해야할 시각 정보가 규칙적이지 않을 때 사용하기 적절한 방식이다.
+
 ```
 TriggerBuilder.newTrigger()
               .withIdentity(/*trigger 고유 키*/)
@@ -70,7 +72,25 @@ TriggerBuilder.newTrigger()
 
 > usingJobData는 Map타입의 JobDataMap 인스턴스를 활용하여 key-value 형태로 생성한다.
 
+해당 방식으로 trigger를 생성하게 되면 QRTZ_SIMPLE_TRIGGERS, QRTZ_TRIGGERS 테이블에 일회성 trigger가 아니라면 trigger 발생 개수 만큼 insert query가 날아가게 된다.
+
+```sql
+INSERT INTO QRTZ_SIMPLE_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP, REPEAT_COUNT, REPEAT_INTERNAL, TIMES_TRIGGERED) 
+VALUES (?);
+INSERT INTO QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP, JOB_NAME, JOB_GROUP, DESCRIPTION, NEXT_FIRE_TIME, PREV_FIRE_TIME, TRIGGER_STATE, TRIGGER_TYPE, START_TIME, END_TIME, CALENDAR_NAME, MISFIRE_INSTR, JOB_DATA, PRIORITY) 
+VALUES (?);
+```
+
+생성한 trigger 만큼 trigger 데이터가 쌓이기 때문에 QRTZ_SIMPLE_TRIGGERS.REPEAT_COUNT, QRTZ_SIMPLE_TRIGGERS.REPEAT_INTERVAL, QRTZ_SIMPLE_TRIGGERS.TIMES_TRIGGERED 값은 0으로 생성된다.
+그리고 QRTZ_TRIGGERS.START_TIME, QRTZ_TRIGGERS.END_TIME에 각 trigger 마다 startAt, endAt 필드로 설정한 시각 정보가 생성된다.
+
+따라서 trigger 개수 만큼 insert query를 실행함으로 인해 생성해야할 trigger 개수가 많다면 성능 이슈가 발생할 수 있다.
+
+> trigger가 발생할 시각이 일정하다면 아래 2번 방식으로 생성하는 것이 효율적이다.
+
 #### 2번
+
+일정한 주기마다 반복적으로 실행해야할 trigger 에 적절한 방식이다.
 
 ```
 TriggerBuilder.newTrigger()
@@ -85,3 +105,13 @@ TriggerBuilder.newTrigger()
 ```
 
 > withSchedule은 SimpleScheduleBuilder 인스턴스를 활용하여 구현할 수 있다.
+
+```sql
+INSERT INTO QRTZ_SIMPLE_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP, REPEAT_COUNT, REPEAT_INTERNAL, TIMES_TRIGGERED) 
+VALUES (?);
+INSERT INTO QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP, JOB_NAME, JOB_GROUP, DESCRIPTION, NEXT_FIRE_TIME, PREV_FIRE_TIME, TRIGGER_STATE, TRIGGER_TYPE, START_TIME, END_TIME, CALENDAR_NAME, MISFIRE_INSTR, JOB_DATA, PRIORITY) 
+VALUES (?);
+```
+
+QRTZ_SIMPLE_TRIGGERS.REPEAT_COUNT, QRTZ_SIMPLE_TRIGGERS.REPEAT_INTERVAL 값은 SimpleScheduleBuilder 인스턴스를 통해 생성할 때 설정한 값 그대로 생성되고, QRTZ_SIMPLE_TRIGGERS.TIMES_TRIGGERED 값은 0으로 초기값은 생성되고 이후 trigger가 실행될 때 마다 1씩 증가된다.
+해당 방식은 위 query가 한번씩만 실행되기 때문에 1번 방식에서 우려될 수 있는 성능 이슈는 문제 없다.
