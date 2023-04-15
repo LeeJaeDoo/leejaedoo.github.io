@@ -19,7 +19,7 @@ comments: true
 
 Quartz Scheduler는 cron Trigger와 simple Trigger 두 가지 방식으로 동작된다.
 cron trigger 방식은 cron 표현식을 활용하여 calender를 기반으로 주기적으로 특정 날짜나 시각 혹은 요일마다 trigger를 발생시키게 되고
-simple trigger 방식은 특정 시각마다, 혹은 특정 주기마다 반복적으로 trigger를 발생시키는 방식이다.
+simple trigger 방식은 특정 시각에 불규칙적으로, 혹은 특정 시점부터 특정 주기마다 반복적으로 trigger를 발생시키는 방식이다.
 
 ## Simple Trigger
 
